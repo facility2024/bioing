@@ -14,7 +14,7 @@ export function CartDrawer() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="relative shrink-0" aria-label="Abrir carrinho">
+        <Button variant="outline" size="icon" className="relative shrink-0 bg-white text-header hover:bg-white/90 hover:text-header border-white" aria-label="Abrir carrinho">
           <ShoppingCart className="h-5 w-5" />
           {count > 0 && (
             <span className="absolute -top-1 -right-1 h-5 min-w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center px-1">
