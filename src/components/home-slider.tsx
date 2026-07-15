@@ -49,7 +49,7 @@ export function HomeSlider() {
       className="w-full relative bg-muted overflow-hidden shadow-2xl ring-1 ring-black/5 aspect-[1600/552]"
       style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05)" }}
     >
-      {slides.map((s, i) => {
+      {validSlides.map((s, i) => {
         const img = (
           <img
             src={s.imagem_url}
@@ -57,6 +57,14 @@ export function HomeSlider() {
             className="w-full h-full object-cover"
             loading="eager"
             decoding="async"
+            onError={() =>
+              setBroken((prev) => {
+                if (prev.has(s.id)) return prev;
+                const next = new Set(prev);
+                next.add(s.id);
+                return next;
+              })
+            }
           />
         );
         return (
@@ -77,9 +85,9 @@ export function HomeSlider() {
           </div>
         );
       })}
-      {slides.length > 1 && (
+      {validSlides.length > 1 && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-          {slides.map((s, i) => (
+          {validSlides.map((s, i) => (
             <button
               key={s.id}
               onClick={() => setIdx(i)}
