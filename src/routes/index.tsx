@@ -70,7 +70,7 @@ function Storefront() {
   );
 
   // reset to page 1 when search changes
-  useMemo(() => setPage(1), [busca]);
+  useEffect(() => setPage(1), [busca]);
 
   const openProduct = (p: ProdutoDetalhe) => {
     setSelected(p);
