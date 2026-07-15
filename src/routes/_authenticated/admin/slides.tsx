@@ -27,6 +27,7 @@ function SlidesAdmin() {
   const qc = useQueryClient();
   const [imagem, setImagem] = useState("");
   const [link, setLink] = useState("");
+  const [intervalo, setIntervalo] = useState("5");
   const [saving, setSaving] = useState(false);
 
   const { data: slides, isLoading } = useQuery({
