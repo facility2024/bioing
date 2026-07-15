@@ -112,5 +112,76 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
     await enviar(config.numero_conectado, mensagemAtendente);
     await enviar(data.cliente.telefone, mensagemCliente);
 
+    // Persistir cliente + pedido + itens
+    try {
+      const telDigits = onlyDigits(data.cliente.telefone);
+
+      // Upsert cliente por whatsapp
+      const { data: existente } = await supabaseAdmin
+        .from("clientes")
+        .select("id")
+        .eq("whatsapp", telDigits)
+        .maybeSingle();
+
+      let clienteId = existente?.id as string | undefined;
+      if (clienteId) {
+        await supabaseAdmin
+          .from("clientes")
+          .update({
+            nome: data.cliente.nome,
+            email: data.cliente.email ?? null,
+          })
+          .eq("id", clienteId);
+      } else {
+        const { data: novo, error: errCli } = await supabaseAdmin
+          .from("clientes")
+          .insert({
+            nome: data.cliente.nome,
+            whatsapp: telDigits,
+            email: data.cliente.email ?? null,
+          })
+          .select("id")
+          .single();
+        if (errCli) throw errCli;
+        clienteId = novo!.id;
+      }
+
+      // Gerar número do pedido
+      const { data: numRow } = await supabaseAdmin.rpc("gerar_numero_pedido");
+      const numero = (numRow as unknown as string) || `PED-${Date.now()}`;
+
+      const observacoes = [
+        enderecoTxt ? `Endereço: ${enderecoTxt}` : null,
+        data.cliente.observacoes ? `Obs: ${data.cliente.observacoes}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ") || null;
+
+      const { data: pedido, error: errPed } = await supabaseAdmin
+        .from("pedidos")
+        .insert({
+          numero,
+          cliente_id: clienteId!,
+          subtotal: data.total,
+          total: data.total,
+          status: "novo",
+          observacoes,
+        })
+        .select("id")
+        .single();
+      if (errPed) throw errPed;
+
+      const itensPayload = data.itens.map((it) => ({
+        pedido_id: pedido!.id,
+        produto_nome: it.nome,
+        quantidade: it.quantidade,
+        valor_unitario: it.preco,
+        valor_total: it.preco * it.quantidade,
+      }));
+      await supabaseAdmin.from("itens_pedido").insert(itensPayload);
+    } catch (e) {
+      console.error("Erro ao registrar pedido no banco:", e);
+    }
+
     return { ok: true };
   });
