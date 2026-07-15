@@ -31,7 +31,7 @@ export const Route = createFileRoute("/")({
   ),
 });
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 function Storefront() {
   const [selected, setSelected] = useState<ProdutoDetalhe | null>(null);
