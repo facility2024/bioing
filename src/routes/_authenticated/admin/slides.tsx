@@ -52,17 +52,20 @@ function SlidesAdmin() {
     if (!imagem.trim()) return toast.error("Informe a URL da imagem");
     setSaving(true);
     const nextOrdem = (slides?.length ?? 0) + 1;
+    const secs = Math.max(1, parseInt(intervalo, 10) || 5);
     const { error } = await supabase.from("home_slides").insert({
       imagem_url: imagem.trim(),
       link_url: link.trim() || null,
       ordem: nextOrdem,
       ativo: true,
+      intervalo_segundos: secs,
     });
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Slide adicionado");
     setImagem("");
     setLink("");
+    setIntervalo("5");
     refresh();
   };
 
