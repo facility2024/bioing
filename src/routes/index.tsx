@@ -85,7 +85,7 @@ function Storefront() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {isLoading && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="rounded-xl border bg-card animate-pulse">
                 <div className="aspect-square bg-muted rounded-t-xl" />
@@ -121,12 +121,25 @@ function Storefront() {
           </div>
         )}
 
-        {filtrados.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filtrados.map((p) => (
-              <ProductCard key={p.id} produto={p} onOpen={() => openProduct(p)} />
-            ))}
-          </div>
+        {pageItems.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {pageItems.map((p) => (
+                <ProductCard key={p.id} produto={p} onOpen={() => openProduct(p)} />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <Pagination
+                current={currentPage}
+                total={totalPages}
+                onChange={(n) => {
+                  setPage(n);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              />
+            )}
+          </>
         )}
       </main>
 
