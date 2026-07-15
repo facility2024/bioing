@@ -129,12 +129,18 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
     if (pedidoNumero) {
       try {
         const { gerarESalvarPedidoPdf } = await import("@/lib/pedido-pdf.server");
-        pdfUrl = await gerarESalvarPedidoPdf({
+        const signedUrl = await gerarESalvarPedidoPdf({
           numero: pedidoNumero,
           cliente: data.cliente,
           itens: data.itens,
           total: data.total,
         });
+        if (signedUrl) {
+          const origin = (data.origin || "").replace(/\/+$/, "");
+          pdfUrl = origin
+            ? `${origin}/api/public/pedido/${encodeURIComponent(pedidoNumero)}.pdf`
+            : signedUrl;
+        }
       } catch (e) {
         console.error("[checkout] Falha ao gerar PDF (não bloqueia pedido):", e);
       }
