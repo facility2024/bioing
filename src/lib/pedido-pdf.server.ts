@@ -29,9 +29,6 @@ export type PedidoPdfInput = {
 };
 
 const BUCKET = "pedidos-pdf";
-const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 dias
-type PdfPageLike = any;
-type PdfFontLike = any;
 
 function formatBRL(n: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
@@ -47,12 +44,12 @@ function hexToRgb(hex?: string | null): { r: number; g: number; b: number } {
 }
 
 function drawWrapped(
-  page: PdfPageLike,
+  page: any,
   text: string,
   x: number,
   y: number,
   maxWidth: number,
-  font: PdfFontLike,
+  font: any,
   size: number,
   color: any,
   lineHeight = 1.25,
@@ -85,7 +82,6 @@ async function fetchLogoBytes(url: string): Promise<{ bytes: Uint8Array; kind: "
     const buf = new Uint8Array(await res.arrayBuffer());
     if (ct.includes("png") || url.toLowerCase().endsWith(".png")) return { bytes: buf, kind: "png" };
     if (ct.includes("jpeg") || ct.includes("jpg") || /\.jpe?g$/i.test(url)) return { bytes: buf, kind: "jpg" };
-    // Try png then jpg
     return { bytes: buf, kind: "png" };
   } catch {
     return null;
@@ -124,20 +120,23 @@ export async function gerarESalvarPedidoPdf(input: PedidoPdfInput): Promise<stri
     return null;
   }
 
-  const { data: signed, error: signErr } = await supabaseAdmin.storage
-    .from(BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-  if (signErr || !signed?.signedUrl) {
-    console.error("[pedido-pdf] signed url falhou:", signErr);
-    return null;
-  }
+  const { data: publicData } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
+  if (publicData?.publicUrl) return publicData.publicUrl;
 
-  return signed.signedUrl;
+  const { data: signed } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 7);
+  return signed?.signedUrl ?? null;
 }
 
 async function gerarPdfComPdfLib(input: PedidoPdfInput, config: ConfigEmpresa): Promise<Uint8Array> {
   const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
-  const headerColor = hexToRgb(config.cor_header);
+  const header = hexToRgb(config.cor_header);
+  const headerColor = rgb(header.r, header.g, header.b);
+  const headerColorDark = rgb(header.r * 0.75, header.g * 0.75, header.b * 0.75);
+  const textDark = rgb(0.12, 0.14, 0.12);
+  const textMuted = rgb(0.42, 0.45, 0.42);
+  const lineSoft = rgb(0.88, 0.9, 0.88);
+  const zebraBg = rgb(0.965, 0.98, 0.965);
+  const white = rgb(1, 1, 1);
 
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([595.28, 841.89]); // A4
@@ -148,27 +147,21 @@ async function gerarPdfComPdfLib(input: PedidoPdfInput, config: ConfigEmpresa): 
   const marginX = 40;
 
   // ============ HEADER ============
-  const headerH = 110;
-  page.drawRectangle({
-    x: 0,
-    y: height - headerH,
-    width,
-    height: headerH,
-    color: rgb(headerColor.r, headerColor.g, headerColor.b),
-  });
+  const headerH = 120;
+  page.drawRectangle({ x: 0, y: height - headerH, width, height: headerH, color: headerColor });
+  // Thin dark strip on bottom of header
+  page.drawRectangle({ x: 0, y: height - headerH - 3, width, height: 3, color: headerColorDark });
 
-  // Logo
-  let logoDrawn = false;
+  // Logo (centered vertically on left). No fallback store-name text — logo já representa a marca.
   if (config.logo_url) {
     const asset = await fetchLogoBytes(config.logo_url);
     if (asset) {
       try {
         const img =
-          asset.kind === "png"
-            ? await pdf.embedPng(asset.bytes)
-            : await pdf.embedJpg(asset.bytes);
-        const maxH = 70;
-        const scale = Math.min(maxH / img.height, 180 / img.width);
+          asset.kind === "png" ? await pdf.embedPng(asset.bytes) : await pdf.embedJpg(asset.bytes);
+        const maxH = 78;
+        const maxW = 220;
+        const scale = Math.min(maxH / img.height, maxW / img.width);
         const w = img.width * scale;
         const h = img.height * scale;
         page.drawImage(img, {
@@ -177,40 +170,30 @@ async function gerarPdfComPdfLib(input: PedidoPdfInput, config: ConfigEmpresa): 
           width: w,
           height: h,
         });
-        logoDrawn = true;
       } catch {
-        // ignore
+        /* ignore */
       }
     }
   }
-  if (!logoDrawn) {
-    page.drawText(config.nome_empresa || "Ingredientes Bio", {
-      x: marginX,
-      y: height - headerH / 2 - 8,
-      size: 22,
-      font: fontBold,
-      color: rgb(1, 1, 1),
-    });
-  }
 
-  // Right-side header text: "COMPROVANTE DE PEDIDO" + numero
+  // Right header block
   const rightLabel = "COMPROVANTE DE PEDIDO";
-  const rightLabelW = fontBold.widthOfTextAtSize(rightLabel, 12);
+  const rightLabelW = fontBold.widthOfTextAtSize(rightLabel, 11);
   page.drawText(rightLabel, {
     x: width - marginX - rightLabelW,
-    y: height - 50,
-    size: 12,
+    y: height - 42,
+    size: 11,
     font: fontBold,
-    color: rgb(1, 1, 1),
+    color: white,
   });
-  const numTxt = `Nº ${input.numero}`;
-  const numW = fontBold.widthOfTextAtSize(numTxt, 16);
+  const numTxt = input.numero;
+  const numW = fontBold.widthOfTextAtSize(numTxt, 22);
   page.drawText(numTxt, {
     x: width - marginX - numW,
-    y: height - 75,
-    size: 16,
+    y: height - 72,
+    size: 22,
     font: fontBold,
-    color: rgb(1, 1, 1),
+    color: white,
   });
   const dateTxt = new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
   const dateW = font.widthOfTextAtSize(dateTxt, 10);
@@ -219,98 +202,125 @@ async function gerarPdfComPdfLib(input: PedidoPdfInput, config: ConfigEmpresa): 
     y: height - 92,
     size: 10,
     font,
-    color: rgb(1, 1, 1),
+    color: white,
   });
 
   // ============ CLIENTE ============
-  let y = height - headerH - 30;
-  page.drawText("Dados do Cliente", { x: marginX, y, size: 13, font: fontBold, color: rgb(0.15, 0.15, 0.15) });
-  y -= 6;
-  page.drawLine({
-    start: { x: marginX, y },
-    end: { x: width - marginX, y },
-    thickness: 0.7,
-    color: rgb(headerColor.r, headerColor.g, headerColor.b),
-  });
-  y -= 16;
+  let y = height - headerH - 34;
 
-  const info = (label: string, value?: string | null) => {
-    if (!value) return;
-    page.drawText(`${label}:`, { x: marginX, y, size: 10, font: fontBold, color: rgb(0.25, 0.25, 0.25) });
-    page.drawText(value, { x: marginX + 70, y, size: 10, font, color: rgb(0.15, 0.15, 0.15) });
-    y -= 15;
+  const sectionTitle = (title: string) => {
+    // small colored bar + title
+    page.drawRectangle({ x: marginX, y: y - 2, width: 4, height: 14, color: headerColor });
+    page.drawText(title.toUpperCase(), {
+      x: marginX + 12,
+      y: y,
+      size: 11,
+      font: fontBold,
+      color: textDark,
+    });
+    y -= 10;
+    page.drawLine({
+      start: { x: marginX, y },
+      end: { x: width - marginX, y },
+      thickness: 0.6,
+      color: lineSoft,
+    });
+    y -= 16;
   };
-  info("Nome", input.cliente.nome);
-  info("Telefone", input.cliente.telefone);
-  info("E-mail", input.cliente.email);
-  const enderecoTxt = [input.cliente.endereco, input.cliente.cidade, input.cliente.cep]
-    .filter(Boolean)
-    .join(" - ");
-  info("Endereço", enderecoTxt || undefined);
-  info("Observações", input.cliente.observacoes);
+
+  sectionTitle("Dados do Cliente");
+
+  // Two-column info layout
+  const colGap = 20;
+  const colW = (width - marginX * 2 - colGap) / 2;
+  const leftX = marginX;
+  const rightX = marginX + colW + colGap;
+
+  const infoPairs: Array<[string, string | undefined]> = [
+    ["Nome", input.cliente.nome],
+    ["Telefone", input.cliente.telefone],
+    ["E-mail", input.cliente.email],
+    [
+      "Endereço",
+      [input.cliente.endereco, input.cliente.cidade, input.cliente.cep].filter(Boolean).join(" - ") || undefined,
+    ],
+  ];
+
+  const drawInfoCell = (x: number, cy: number, label: string, value: string) => {
+    page.drawText(label.toUpperCase(), { x, y: cy, size: 7.5, font: fontBold, color: textMuted });
+    drawWrapped(page, value, x, cy - 12, colW, font, 10.5, textDark, 1.25);
+  };
+
+  let rowY = y;
+  for (let i = 0; i < infoPairs.length; i += 2) {
+    const [l1, v1] = infoPairs[i];
+    const pair2 = infoPairs[i + 1];
+    if (v1) drawInfoCell(leftX, rowY, l1, v1);
+    if (pair2 && pair2[1]) drawInfoCell(rightX, rowY, pair2[0], pair2[1]);
+    rowY -= 34;
+  }
+  y = rowY;
+
+  if (input.cliente.observacoes) {
+    drawInfoCell(leftX, y, "Observações", input.cliente.observacoes);
+    y -= 34;
+  }
 
   // ============ ITENS ============
-  y -= 10;
-  page.drawText("Itens do Pedido", { x: marginX, y, size: 13, font: fontBold, color: rgb(0.15, 0.15, 0.15) });
-  y -= 6;
-  page.drawLine({
-    start: { x: marginX, y },
-    end: { x: width - marginX, y },
-    thickness: 0.7,
-    color: rgb(headerColor.r, headerColor.g, headerColor.b),
-  });
-  y -= 18;
+  y -= 4;
+  sectionTitle("Itens do Pedido");
+
+  // Column x positions
+  const colQtdX = width - marginX - 250;
+  const colUnitX = width - marginX - 170;
+  const colTotalRight = width - marginX - 8;
+  const rowH = 22;
 
   // Table header
   page.drawRectangle({
     x: marginX,
-    y: y - 4,
+    y: y - 6,
     width: width - marginX * 2,
-    height: 20,
-    color: rgb(headerColor.r, headerColor.g, headerColor.b),
+    height: rowH,
+    color: headerColor,
   });
-  page.drawText("Produto", { x: marginX + 8, y: y + 2, size: 10, font: fontBold, color: rgb(1, 1, 1) });
-  page.drawText("Qtd", { x: marginX + 300, y: y + 2, size: 10, font: fontBold, color: rgb(1, 1, 1) });
-  page.drawText("Unit.", { x: marginX + 350, y: y + 2, size: 10, font: fontBold, color: rgb(1, 1, 1) });
-  const totalHeaderTxt = "Total";
-  const totalHeaderW = fontBold.widthOfTextAtSize(totalHeaderTxt, 10);
-  page.drawText(totalHeaderTxt, {
-    x: width - marginX - 8 - totalHeaderW,
-    y: y + 2,
-    size: 10,
-    font: fontBold,
-    color: rgb(1, 1, 1),
-  });
-  y -= 22;
+  const headTextY = y + 1;
+  page.drawText("PRODUTO", { x: marginX + 10, y: headTextY, size: 9.5, font: fontBold, color: white });
+  page.drawText("QTD", { x: colQtdX, y: headTextY, size: 9.5, font: fontBold, color: white });
+  page.drawText("UNIT.", { x: colUnitX, y: headTextY, size: 9.5, font: fontBold, color: white });
+  const th = "TOTAL";
+  const thW = fontBold.widthOfTextAtSize(th, 9.5);
+  page.drawText(th, { x: colTotalRight - thW, y: headTextY, size: 9.5, font: fontBold, color: white });
+  y -= rowH + 2;
 
   let zebra = false;
   for (const it of input.itens) {
+    if (y < 180) break; // safety
     if (zebra) {
       page.drawRectangle({
         x: marginX,
-        y: y - 4,
+        y: y - 6,
         width: width - marginX * 2,
-        height: 20,
-        color: rgb(0.96, 0.98, 0.95),
+        height: rowH,
+        color: zebraBg,
       });
     }
     zebra = !zebra;
-    const nomeTruncado =
-      it.nome.length > 55 ? it.nome.slice(0, 52) + "..." : it.nome;
-    page.drawText(nomeTruncado, { x: marginX + 8, y: y + 2, size: 10, font, color: rgb(0.15, 0.15, 0.15) });
-    page.drawText(String(it.quantidade), { x: marginX + 306, y: y + 2, size: 10, font, color: rgb(0.15, 0.15, 0.15) });
-    page.drawText(formatBRL(it.preco), { x: marginX + 350, y: y + 2, size: 10, font, color: rgb(0.15, 0.15, 0.15) });
+
+    const maxNomeW = colQtdX - marginX - 20;
+    let nome = it.nome;
+    while (font.widthOfTextAtSize(nome, 10) > maxNomeW && nome.length > 4) {
+      nome = nome.slice(0, -2);
+    }
+    if (nome !== it.nome) nome = nome.slice(0, -1) + "…";
+
+    page.drawText(nome, { x: marginX + 10, y: y + 1, size: 10, font, color: textDark });
+    page.drawText(String(it.quantidade), { x: colQtdX + 6, y: y + 1, size: 10, font, color: textDark });
+    page.drawText(formatBRL(it.preco), { x: colUnitX, y: y + 1, size: 10, font, color: textDark });
     const linha = formatBRL(it.preco * it.quantidade);
-    const linhaW = font.widthOfTextAtSize(linha, 10);
-    page.drawText(linha, {
-      x: width - marginX - 8 - linhaW,
-      y: y + 2,
-      size: 10,
-      font,
-      color: rgb(0.15, 0.15, 0.15),
-    });
-    y -= 20;
-    if (y < 160) break; // safety — very long orders truncate
+    const linhaW = fontBold.widthOfTextAtSize(linha, 10);
+    page.drawText(linha, { x: colTotalRight - linhaW, y: y + 1, size: 10, font: fontBold, color: textDark });
+    y -= rowH;
   }
 
   // ============ TOTAL ============
@@ -319,45 +329,53 @@ async function gerarPdfComPdfLib(input: PedidoPdfInput, config: ConfigEmpresa): 
     start: { x: marginX, y },
     end: { x: width - marginX, y },
     thickness: 1,
-    color: rgb(headerColor.r, headerColor.g, headerColor.b),
+    color: headerColor,
   });
-  y -= 22;
-  const totalLabel = "TOTAL DO PEDIDO";
+  y -= 30;
+
+  // Total pill on the right
   const totalValor = formatBRL(input.total);
-  const totalValorW = fontBold.widthOfTextAtSize(totalValor, 16);
-  page.drawText(totalLabel, { x: marginX, y, size: 12, font: fontBold, color: rgb(0.15, 0.15, 0.15) });
-  page.drawText(totalValor, {
-    x: width - marginX - totalValorW,
-    y: y - 1,
-    size: 16,
+  const boxW = 240;
+  const boxH = 44;
+  const boxX = width - marginX - boxW;
+  const boxY = y - 8;
+  page.drawRectangle({ x: boxX, y: boxY, width: boxW, height: boxH, color: headerColor });
+  page.drawText("TOTAL DO PEDIDO", {
+    x: boxX + 14,
+    y: boxY + boxH - 16,
+    size: 9,
     font: fontBold,
-    color: rgb(headerColor.r, headerColor.g, headerColor.b),
+    color: white,
+  });
+  const tvSize = 20;
+  const tvW = fontBold.widthOfTextAtSize(totalValor, tvSize);
+  page.drawText(totalValor, {
+    x: boxX + boxW - 14 - tvW,
+    y: boxY + 12,
+    size: tvSize,
+    font: fontBold,
+    color: white,
   });
 
-  // ============ RODAPÉ (verde) ============
-  const footerH = 85;
-  page.drawRectangle({
-    x: 0,
-    y: 0,
-    width,
-    height: footerH,
-    color: rgb(headerColor.r, headerColor.g, headerColor.b),
-  });
+  // ============ RODAPÉ ============
+  const footerH = 80;
+  page.drawRectangle({ x: 0, y: 0, width, height: footerH, color: headerColor });
+  page.drawRectangle({ x: 0, y: footerH, width, height: 3, color: headerColorDark });
 
   const rodapeLinhas = [
     config.rodape_texto || config.nome_empresa,
     config.rodape_cnpj ? `CNPJ: ${config.rodape_cnpj}` : null,
     config.rodape_endereco,
-    [config.rodape_telefone, config.rodape_email].filter(Boolean).join(" · ") || null,
+    [config.rodape_telefone, config.rodape_email].filter(Boolean).join("  ·  ") || null,
   ].filter(Boolean) as string[];
 
   let fy = footerH - 18;
   for (let i = 0; i < rodapeLinhas.length; i++) {
     const line = rodapeLinhas[i];
-    const size = i === 0 ? 11 : 9;
+    const size = i === 0 ? 10.5 : 8.5;
     const f = i === 0 ? fontBold : font;
-    fy = drawWrapped(page, line, marginX, fy, width - marginX * 2, f, size, rgb(1, 1, 1), 1.2);
-    fy -= 2;
+    fy = drawWrapped(page, line, marginX, fy, width - marginX * 2, f, size, white, 1.25);
+    fy -= 1;
   }
 
   return pdf.save();
@@ -377,55 +395,53 @@ function sanitizePdfText(value: string): string {
 function gerarPdfSimples(input: PedidoPdfInput, config: ConfigEmpresa): Uint8Array {
   const header = hexToRgb(config.cor_header);
   const rgbFill = `${header.r.toFixed(3)} ${header.g.toFixed(3)} ${header.b.toFixed(3)} rg`;
-  const lines: string[] = [];
-  const add = (text = "") => lines.push(sanitizePdfText(text));
-
-  add(config.nome_empresa || "Ingredientes Bio");
-  add(`COMPROVANTE DE PEDIDO - ${input.numero}`);
-  add(new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }));
-  add("");
-  add("DADOS DO CLIENTE");
-  add(`Nome: ${input.cliente.nome}`);
-  add(`Telefone: ${input.cliente.telefone}`);
-  if (input.cliente.email) add(`E-mail: ${input.cliente.email}`);
-  const endereco = [input.cliente.endereco, input.cliente.cidade, input.cliente.cep].filter(Boolean).join(" - ");
-  if (endereco) add(`Endereco: ${endereco}`);
-  if (input.cliente.observacoes) add(`Observacoes: ${input.cliente.observacoes}`);
-  add("");
-  add("ITENS DO PEDIDO");
-  for (const item of input.itens.slice(0, 26)) {
-    add(`${item.quantidade}x ${item.nome} - ${formatBRL(item.preco * item.quantidade)}`);
-  }
-  if (input.itens.length > 26) add(`... e mais ${input.itens.length - 26} item(ns)`);
-  add("");
-  add(`TOTAL DO PEDIDO: ${formatBRL(input.total)}`);
-
-  const contentLines = [
+  const contentLines: string[] = [
     "q",
     rgbFill,
-    "0 732 595 110 re f",
-    "0 0 595 85 re f",
+    "0 722 595 120 re f",
+    "0 0 595 80 re f",
     "Q",
-    "BT /F1 18 Tf 40 790 Td 1 1 1 rg (" + sanitizePdfText(config.nome_empresa || "Ingredientes Bio") + ") Tj ET",
-    "BT /F1 12 Tf 380 790 Td 1 1 1 rg (" + sanitizePdfText(input.numero) + ") Tj ET",
+    "BT /F1 11 Tf 380 795 Td 1 1 1 rg (COMPROVANTE DE PEDIDO) Tj ET",
+    "BT /F1 20 Tf 440 770 Td 1 1 1 rg (" + sanitizePdfText(input.numero) + ") Tj ET",
+    "BT /F1 10 Tf 440 750 Td 1 1 1 rg (" +
+      sanitizePdfText(new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })) +
+      ") Tj ET",
   ];
 
-  let y = 700;
-  lines.forEach((line, index) => {
-    const size = index === 0 ? 14 : line === "DADOS DO CLIENTE" || line === "ITENS DO PEDIDO" ? 12 : 10;
-    const color = line === "" ? "0 0 0 rg" : "0.12 0.12 0.12 rg";
-    if (line) contentLines.push(`BT /F1 ${size} Tf 40 ${y} Td ${color} (${line}) Tj ET`);
-    y -= line === "" ? 12 : 17;
-  });
+  let y = 690;
+  const section = (title: string) => {
+    contentLines.push(`BT /F1 11 Tf 40 ${y} Td 0.12 0.14 0.12 rg (${sanitizePdfText(title.toUpperCase())}) Tj ET`);
+    y -= 18;
+  };
+  const line = (text: string, size = 10) => {
+    contentLines.push(`BT /F1 ${size} Tf 40 ${y} Td 0.12 0.14 0.12 rg (${sanitizePdfText(text)}) Tj ET`);
+    y -= size + 5;
+  };
+
+  section("Dados do Cliente");
+  line(`Nome: ${input.cliente.nome}`);
+  line(`Telefone: ${input.cliente.telefone}`);
+  if (input.cliente.email) line(`E-mail: ${input.cliente.email}`);
+  const endereco = [input.cliente.endereco, input.cliente.cidade, input.cliente.cep].filter(Boolean).join(" - ");
+  if (endereco) line(`Endereco: ${endereco}`);
+  if (input.cliente.observacoes) line(`Obs: ${input.cliente.observacoes}`);
+  y -= 8;
+  section("Itens do Pedido");
+  for (const item of input.itens.slice(0, 22)) {
+    line(`${item.quantidade}x ${item.nome} - ${formatBRL(item.preco * item.quantidade)}`);
+  }
+  if (input.itens.length > 22) line(`... e mais ${input.itens.length - 22} item(ns)`);
+  y -= 10;
+  contentLines.push(`BT /F1 14 Tf 40 ${y} Td 0.12 0.14 0.12 rg (TOTAL DO PEDIDO: ${sanitizePdfText(formatBRL(input.total))}) Tj ET`);
 
   const footer = [
-    config.rodape_texto || config.nome_empresa || "Ingredientes Bio",
+    config.rodape_texto || config.nome_empresa || "",
     config.rodape_cnpj ? `CNPJ: ${config.rodape_cnpj}` : "",
     config.rodape_endereco || "",
     [config.rodape_telefone, config.rodape_email].filter(Boolean).join(" - "),
   ].filter(Boolean);
-  footer.forEach((line, index) => {
-    contentLines.push(`BT /F1 ${index === 0 ? 10 : 8} Tf 40 ${58 - index * 14} Td 1 1 1 rg (${sanitizePdfText(line)}) Tj ET`);
+  footer.forEach((l, index) => {
+    contentLines.push(`BT /F1 ${index === 0 ? 10 : 8} Tf 40 ${58 - index * 14} Td 1 1 1 rg (${sanitizePdfText(l)}) Tj ET`);
   });
 
   const stream = contentLines.join("\n");
