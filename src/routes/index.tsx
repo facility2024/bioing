@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ShoppingBag, Package, Truck, Search, User, PackageSearch, Menu } from "lucide-react";
+import { ShoppingBag, Package, Truck, Search, User, PackageSearch, Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import { CartProvider, useCart, formatBRL } from "@/hooks/use-cart";
 import { CartDrawer } from "@/components/cart-drawer";
 import { ProductDetailDialog, type ProdutoDetalhe } from "@/components/product-detail-dialog";
