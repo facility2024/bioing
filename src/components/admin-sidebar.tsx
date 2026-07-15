@@ -23,6 +23,7 @@ const mainItems = [
   { title: "Categorias", url: "/admin/categorias", icon: Tags },
   { title: "Pedidos", url: "/admin/pedidos", icon: ShoppingCart },
   { title: "Clientes", url: "/admin/clientes", icon: Users },
+  { title: "Slides do topo", url: "/admin/slides", icon: Images },
 ];
 
 const configItems = [
