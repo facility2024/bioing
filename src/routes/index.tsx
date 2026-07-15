@@ -14,10 +14,10 @@ const LOGO_URL = "https://http2.mlstatic.com/D_NQ_NP_647118-MLA112443697393_0520
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Loja — Produtos" },
+      { title: "Loja — BioIng" },
       { name: "description", content: "Confira nossos produtos e faça seu pedido." },
-      { property: "og:title", content: "Nossa Loja" },
-      { property: "og:description", content: "Produtos selecionados com entrega rápida." },
+      { property: "og:title", content: "Loja — BioIng" },
+      { property: "og:description", content: "Confira nossos produtos e faça seu pedido." },
     ],
   }),
   component: () => (
