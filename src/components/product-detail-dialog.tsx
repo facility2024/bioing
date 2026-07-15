@@ -64,12 +64,12 @@ export function ProductDetailDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[95vw] sm:w-full sm:max-w-5xl p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col">
+        <DialogContent className="w-[95vw] sm:w-full sm:max-w-3xl p-0 gap-0 overflow-hidden max-h-[92vh] block">
           <DialogTitle className="sr-only">{produto.nome}</DialogTitle>
-          <div className="flex flex-col lg:grid lg:grid-cols-[1fr_360px] overflow-y-auto">
-            {/* Image column */}
-            <div className="p-4 md:p-6 flex flex-col gap-4 bg-white min-h-[280px]">
-              <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col overflow-y-auto max-h-[92vh]">
+            {/* Main image */}
+            <div className="p-4 md:p-6 bg-white">
+              <div className="flex items-center justify-center">
                 {mainImage ? (
                   <MagnifierImage src={mainImage} alt={produto.nome} />
                 ) : (
@@ -81,7 +81,7 @@ export function ProductDetailDialog({
 
               {/* Thumbnails below the image */}
               {gallery.length > 1 && (
-                <div className="flex gap-2 flex-wrap justify-center">
+                <div className="mt-4 flex gap-2 flex-wrap justify-center">
                   {gallery.map((img, i) => (
                     <button
                       key={img + i}
@@ -99,22 +99,10 @@ export function ProductDetailDialog({
                   ))}
                 </div>
               )}
-
-              {/* Descrição button */}
-              {produto.descricao && (
-                <Button
-                  variant="outline"
-                  onClick={() => setDescOpen(true)}
-                  className="w-full"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Descrição
-                </Button>
-              )}
             </div>
 
-            {/* Info column */}
-            <div className="p-4 md:p-6 border-t lg:border-t-0 lg:border-l flex flex-col gap-4">
+            {/* Info section below thumbnails */}
+            <div className="p-4 md:p-6 border-t flex flex-col gap-4">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>Novo</span>
                 <span>·</span>
@@ -140,6 +128,13 @@ export function ProductDetailDialog({
                   <span>Compra garantida</span>
                 </div>
               </div>
+
+              {produto.descricao && (
+                <Button variant="outline" onClick={() => setDescOpen(true)} className="w-full">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Descrição
+                </Button>
+              )}
 
               {produto.controla_estoque && (
                 <Badge variant="secondary" className="w-fit">
@@ -171,7 +166,7 @@ export function ProductDetailDialog({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 mt-auto">
+              <div className="flex flex-col gap-2">
                 <div className="flex items-baseline justify-between rounded-lg border bg-muted/40 p-3">
                   <span className="text-sm text-muted-foreground">Subtotal ({qty} {qty > 1 ? "itens" : "item"})</span>
                   <span className="text-xl font-bold">{formatBRL(Number(produto.preco) * qty)}</span>
@@ -179,12 +174,7 @@ export function ProductDetailDialog({
                 <Button onClick={handleAdd} disabled={semEstoque} size="lg">
                   {semEstoque ? "Esgotado" : "Comprar agora"}
                 </Button>
-                <Button
-                  onClick={handleAdd}
-                  disabled={semEstoque}
-                  size="lg"
-                  variant="secondary"
-                >
+                <Button onClick={handleAdd} disabled={semEstoque} size="lg" variant="secondary">
                   <ShoppingCart className="h-4 w-4 mr-2" />
                   Adicionar ao carrinho
                 </Button>
