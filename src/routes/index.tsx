@@ -63,15 +63,32 @@ function Storefront() {
     );
   }, [produtos, busca]);
 
-  const totalPages = Math.max(1, Math.ceil(filtrados.length / PAGE_SIZE));
+  const pages = useMemo(() => {
+    const result: ProdutoDetalhe[][] = [];
+    for (let i = 0; i < filtrados.length; i += PAGE_SIZE) {
+      result.push(filtrados.slice(i, i + PAGE_SIZE));
+    }
+    return result;
+  }, [filtrados]);
+  const totalPages = Math.max(1, pages.length);
   const currentPage = Math.min(page, totalPages);
-  const pageItems = useMemo(
-    () => filtrados.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
-    [filtrados, currentPage],
-  );
+
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+  const goTo = (n: number) => {
+    const clamped = Math.min(Math.max(1, n), totalPages);
+    setPage(clamped);
+    const el = scrollerRef.current;
+    if (el) {
+      el.scrollTo({ left: (clamped - 1) * el.clientWidth, behavior: "smooth" });
+    }
+  };
 
   // reset to page 1 when search changes
-  useEffect(() => setPage(1), [busca]);
+  useEffect(() => {
+    setPage(1);
+    scrollerRef.current?.scrollTo({ left: 0 });
+  }, [busca]);
 
   const openProduct = (p: ProdutoDetalhe) => {
     setSelected(p);
