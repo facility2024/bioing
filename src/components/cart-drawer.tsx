@@ -3,10 +3,13 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Minus, Plus, Trash2 } from "lucide-react";
 import { useCart, formatBRL } from "@/hooks/use-cart";
 import { useState } from "react";
+import { CheckoutDialog } from "@/components/checkout-dialog";
 
 export function CartDrawer() {
   const { items, count, total, setQty, remove, clear } = useCart();
   const [open, setOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -60,11 +63,24 @@ export function CartDrawer() {
 
         {items.length > 0 && (
           <SheetFooter className="flex-col gap-2 sm:flex-col">
-            <div className="flex justify-between text-base font-semibold w-full">
-              <span>Total</span>
-              <span>{formatBRL(total)}</span>
+            <div className="w-full space-y-1 pb-1">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Subtotal ({count} {count > 1 ? "itens" : "item"})</span>
+                <span>{formatBRL(total)}</span>
+              </div>
+              <div className="flex justify-between text-base font-semibold">
+                <span>Total</span>
+                <span>{formatBRL(total)}</span>
+              </div>
             </div>
-            <Button className="w-full" size="lg" disabled>
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={() => {
+                setOpen(false);
+                setCheckoutOpen(true);
+              }}
+            >
               Finalizar pedido
             </Button>
             <Button variant="ghost" className="w-full" onClick={clear}>
@@ -73,6 +89,8 @@ export function CartDrawer() {
           </SheetFooter>
         )}
       </SheetContent>
+      <CheckoutDialog open={checkoutOpen} onOpenChange={setCheckoutOpen} />
     </Sheet>
   );
 }
+
