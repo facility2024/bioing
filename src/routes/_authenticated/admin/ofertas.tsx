@@ -40,10 +40,43 @@ const empty: Oferta = {
   fechar_manualmente: true,
 };
 
+type ProdutoLite = { id: string; nome: string; imagem_url: string | null };
+
 function OfertasAdmin() {
   const qc = useQueryClient();
   const [form, setForm] = useState<Oferta>(empty);
   const [saving, setSaving] = useState(false);
+  const [buscaProduto, setBuscaProduto] = useState("");
+  const [showBusca, setShowBusca] = useState(false);
+
+  const { data: produtos } = useQuery({
+    queryKey: ["admin-ofertas-produtos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("produtos")
+        .select("id, nome, imagem_url")
+        .eq("ativo", true)
+        .order("nome", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as ProdutoLite[];
+    },
+  });
+
+  const produtoSelecionadoId = useMemo(() => {
+    const m = /[?&]produto=([^&]+)/.exec(form.cta_url || "");
+    return m ? decodeURIComponent(m[1]) : null;
+  }, [form.cta_url]);
+
+  const produtoSelecionado = useMemo(
+    () => produtos?.find((p) => p.id === produtoSelecionadoId) ?? null,
+    [produtos, produtoSelecionadoId],
+  );
+
+  const resultadosBusca = useMemo(() => {
+    const q = buscaProduto.trim().toLowerCase();
+    if (!q || !produtos) return [];
+    return produtos.filter((p) => p.nome.toLowerCase().includes(q)).slice(0, 8);
+  }, [buscaProduto, produtos]);
 
   const { data } = useQuery({
     queryKey: ["admin-oferta-popup"],
