@@ -50,7 +50,7 @@ export function HomeSlider() {
             src={s.imagem_url}
             alt="Banner promocional"
             className="w-full h-full object-cover"
-            loading={i === 0 ? "eager" : "lazy"}
+            loading="eager"
             decoding="async"
           />
         );
