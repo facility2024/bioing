@@ -124,9 +124,6 @@ export async function gerarESalvarPedidoPdf(input: PedidoPdfInput): Promise<stri
     return null;
   }
 
-  const { data: publicData } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
-  if (publicData?.publicUrl) return publicData.publicUrl;
-
   const { data: signed, error: signErr } = await supabaseAdmin.storage
     .from(BUCKET)
     .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
