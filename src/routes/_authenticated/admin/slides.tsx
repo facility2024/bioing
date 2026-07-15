@@ -92,8 +92,14 @@ function SlidesAdmin() {
     const swap = idx + dir;
     if (swap < 0 || swap >= list.length) return;
     const other = list[swap];
-    await supabase.from("home_slides").update({ ordem: other.ordem }).eq("id", s.id);
-    await supabase.from("home_slides").update({ ordem: s.ordem }).eq("id", other.id);
+    // 3-step swap com valor temporário para evitar conflitos de ordem duplicada
+    const tempOrdem = -Date.now();
+    const r1 = await supabase.from("home_slides").update({ ordem: tempOrdem }).eq("id", s.id);
+    if (r1.error) return toast.error("Erro ao reordenar: " + r1.error.message);
+    const r2 = await supabase.from("home_slides").update({ ordem: s.ordem }).eq("id", other.id);
+    if (r2.error) return toast.error("Erro ao reordenar: " + r2.error.message);
+    const r3 = await supabase.from("home_slides").update({ ordem: other.ordem }).eq("id", s.id);
+    if (r3.error) return toast.error("Erro ao reordenar: " + r3.error.message);
     refresh();
   };
 
