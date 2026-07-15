@@ -72,6 +72,7 @@ export function CheckoutDialog({
           },
           itens: items.map((it) => ({ nome: it.nome, preco: it.preco, quantidade: it.quantidade })),
           total,
+          origin: typeof window !== "undefined" ? window.location.origin : undefined,
         },
       });
       setPedidoNumero(result.numero ?? null);
