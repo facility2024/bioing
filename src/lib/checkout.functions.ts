@@ -153,7 +153,9 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       `Endereço: R. São Bartolomeu, 785 - Vila San Martin, Sumaré - SP, 13180-310\n` +
       `✉️ *E-mail:* vendas@biocondobrasil.com.br`;
 
-    const linhaPdf = pdfUrl ? `\n\n📄 *Comprovante em PDF:* ${pdfUrl}\n_(link disponível por 7 dias)_` : "";
+    const linhaPdf = pdfUrl
+      ? `\n\n📄 *Link do PDF do pedido:*\n${pdfUrl}\n\nClique no link acima para abrir ou baixar o comprovante.`
+      : "";
 
     const mensagemAtendente =
       `🛒 *Novo pedido ${pedidoNumero ?? ""}*\n\n` +
@@ -202,6 +204,6 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       console.warn("[checkout] WhatsApp não configurado — pedido salvo sem notificação.");
     }
 
-    return { ok: true, numero: pedidoNumero };
+    return { ok: true, numero: pedidoNumero, pdfUrl };
   });
 
