@@ -10,15 +10,25 @@ export function HomeSlider() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_slides")
-        .select("id, imagem_url, link_url, intervalo_segundos")
+        .select("id, imagem_url, link_url, intervalo_segundos, ordem")
         .eq("ativo", true)
         .order("ordem", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as Slide[];
+      const rows = (data ?? []) as (Slide & { ordem: number })[];
+      // Garante ordem correta no cliente (mobile pode receber cache antigo)
+      return [...rows].sort((a, b) => a.ordem - b.ordem) as Slide[];
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const [idx, setIdx] = useState(0);
+
+  // Reset para o primeiro slide sempre que a lista/ordem mudar
+  const orderKey = (slides ?? []).map((s) => s.id).join("|");
+  useEffect(() => {
+    setIdx(0);
+  }, [orderKey]);
 
   useEffect(() => {
     if (!slides || slides.length <= 1) return;
@@ -40,7 +50,7 @@ export function HomeSlider() {
             src={s.imagem_url}
             alt="Banner promocional"
             className="w-full h-full object-cover"
-            loading={i === 0 ? "eager" : "lazy"}
+            loading="eager"
             decoding="async"
           />
         );
