@@ -42,7 +42,7 @@ export function HomeSlider() {
 
   return (
     <div
-      className="w-full relative bg-muted overflow-hidden shadow-2xl ring-1 ring-black/5 h-32 sm:h-48 md:h-[300px] lg:h-[360px]"
+      className="w-full relative bg-muted overflow-hidden shadow-2xl ring-1 ring-black/5 aspect-[1600/552]"
       style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05)" }}
     >
       {current.link_url ? (

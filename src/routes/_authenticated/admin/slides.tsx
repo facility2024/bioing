@@ -135,7 +135,7 @@ function SlidesAdmin() {
             </Button>
           </form>
           <p className="text-xs text-muted-foreground mt-3">
-            Recomendado: imagens em formato paisagem (1600x250) ou similar. Aparecem no topo da loja em 250px de altura.
+            Recomendado: imagens no formato <strong>1600x552 pixels</strong> (paisagem). O banner é exibido no topo da loja mantendo essa proporção.
           </p>
         </CardContent>
       </Card>
