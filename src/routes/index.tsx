@@ -31,13 +31,11 @@ export const Route = createFileRoute("/")({
   ),
 });
 
-const PAGE_SIZE = 5;
-
 function Storefront() {
   const [selected, setSelected] = useState<ProdutoDetalhe | null>(null);
   const [open, setOpen] = useState(false);
   const [busca, setBusca] = useState("");
-  const [page, setPage] = useState(1);
+
 
   const { data: produtos, isLoading, error } = useQuery({
     queryKey: ["produtos-loja"],
