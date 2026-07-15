@@ -132,7 +132,7 @@ export function ChatWidget() {
             onClick={openChat}
             className="relative flex items-start gap-2 rounded-2xl rounded-br-sm bg-white shadow-xl border border-gray-200 px-3 py-2.5 text-left hover:shadow-2xl transition-shadow"
           >
-            <img src={AVATAR} alt="Ingredientes Bio" className="h-8 w-8 rounded-full object-cover shrink-0" />
+            <img src={AVATAR} alt="Ingredientes Bio" className="h-8 w-8 rounded-full object-cover shrink-0 border border-black/70" />
             <div className="text-sm text-gray-800 leading-snug">
               <p className="font-semibold text-header">Ingredientes Bio</p>
               <p>Olá! 👋 Posso te ajudar em algo? Tire suas dúvidas!</p>
@@ -158,7 +158,7 @@ export function ChatWidget() {
         <button
           onClick={openChat}
           aria-label="Abrir chat"
-          className="fixed bottom-4 right-4 z-40 h-14 w-14 rounded-full bg-header shadow-lg hover:scale-105 transition-transform flex items-center justify-center overflow-hidden ring-2 ring-white"
+          className="fixed bottom-4 right-4 z-40 h-14 w-14 rounded-full bg-header shadow-lg hover:scale-105 transition-transform flex items-center justify-center overflow-hidden border border-black/80"
         >
           <img src={AVATAR} alt="Ingredientes Bio" className="h-14 w-14 object-cover" />
           <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-emerald-500 ring-2 ring-white animate-pulse" />
@@ -170,7 +170,7 @@ export function ChatWidget() {
         <div className="fixed bottom-4 right-4 z-40 w-[92vw] max-w-sm h-[70vh] max-h-[560px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4">
           {/* Header */}
           <div className="bg-header text-white px-4 py-3 flex items-center gap-3">
-            <img src={AVATAR} alt="" className="h-10 w-10 rounded-full object-cover bg-white/10" />
+            <img src={AVATAR} alt="" className="h-10 w-10 rounded-full object-cover bg-white/10 border border-black/70" />
             <div className="flex-1 leading-tight">
               <p className="font-semibold">Ingredientes Bio</p>
               <p className="text-xs opacity-90 flex items-center gap-1.5">
@@ -192,7 +192,7 @@ export function ChatWidget() {
             {msgs.map((m, i) => (
               <div key={i} className={`flex gap-2 ${m.from === "user" ? "justify-end" : "justify-start"}`}>
                 {m.from === "bot" && (
-                  <img src={AVATAR} alt="" className="h-8 w-8 rounded-full object-cover shrink-0" />
+                  <img src={AVATAR} alt="" className="h-8 w-8 rounded-full object-cover shrink-0 border border-black/70" />
                 )}
                 <div className="max-w-[75%] space-y-2">
                   <div
@@ -221,7 +221,7 @@ export function ChatWidget() {
 
             {typing && (
               <div className="flex gap-2 justify-start">
-                <img src={AVATAR} alt="" className="h-8 w-8 rounded-full object-cover shrink-0" />
+                <img src={AVATAR} alt="" className="h-8 w-8 rounded-full object-cover shrink-0 border border-black/70" />
                 <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-3 py-2.5 flex items-center gap-1">
                   <span className="h-2 w-2 rounded-full bg-gray-400 animate-bounce [animation-delay:-0.3s]" />
                   <span className="h-2 w-2 rounded-full bg-gray-400 animate-bounce [animation-delay:-0.15s]" />
