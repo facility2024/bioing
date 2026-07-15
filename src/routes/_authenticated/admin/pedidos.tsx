@@ -49,9 +49,12 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
   cancelado: "destructive",
 };
 
+const PAGE_SIZE = 10;
+
 function PedidosAdmin() {
   const qc = useQueryClient();
   const [sel, setSel] = useState<Pedido | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data: pedidos, isLoading } = useQuery({
     queryKey: ["admin-pedidos"],
@@ -115,8 +118,14 @@ function PedidosAdmin() {
           </CardContent>
         </Card>
       ) : (
+        (() => {
+          const totalPages = Math.max(1, Math.ceil(pedidos.length / PAGE_SIZE));
+          const currentPage = Math.min(page, totalPages);
+          const start = (currentPage - 1) * PAGE_SIZE;
+          const pageItems = pedidos.slice(start, start + PAGE_SIZE);
+          return (
         <div className="space-y-3">
-          {pedidos.map((p) => (
+          {pageItems.map((p) => (
             <Card key={p.id}>
               <CardContent className="p-4 flex flex-col md:flex-row md:items-center gap-3">
                 <div className="flex-1 min-w-0">
@@ -150,10 +159,42 @@ function PedidosAdmin() {
               </CardContent>
             </Card>
           ))}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-xs text-muted-foreground">
+                Mostrando {start + 1}–{Math.min(start + PAGE_SIZE, pedidos.length)} de {pedidos.length}
+              </p>
+              <div className="flex items-center gap-1 flex-wrap">
+                <Button size="sm" variant="outline" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
+                  Anterior
+                </Button>
+                {Array.from({ length: totalPages }).map((_, i) => {
+                  const n = i + 1;
+                  return (
+                    <Button
+                      key={n}
+                      size="sm"
+                      variant={n === currentPage ? "default" : "outline"}
+                      onClick={() => setPage(n)}
+                      className="w-9"
+                    >
+                      {n}
+                    </Button>
+                  );
+                })}
+                <Button size="sm" variant="outline" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>
+                  Próxima
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
+          );
+        })()
       )}
 
       <Dialog open={!!sel} onOpenChange={(v) => !v && setSel(null)}>
+
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Pedido {sel?.numero}</DialogTitle></DialogHeader>
           {sel && (
