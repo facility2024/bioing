@@ -30,10 +30,13 @@ export const Route = createFileRoute("/")({
   ),
 });
 
+const PAGE_SIZE = 10;
+
 function Storefront() {
   const [selected, setSelected] = useState<ProdutoDetalhe | null>(null);
   const [open, setOpen] = useState(false);
   const [busca, setBusca] = useState("");
+  const [page, setPage] = useState(1);
 
   const { data: produtos, isLoading, error } = useQuery({
     queryKey: ["produtos-loja"],
@@ -58,6 +61,16 @@ function Storefront() {
         (p.descricao ?? "").toLowerCase().includes(q),
     );
   }, [produtos, busca]);
+
+  const totalPages = Math.max(1, Math.ceil(filtrados.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = useMemo(
+    () => filtrados.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtrados, currentPage],
+  );
+
+  // reset to page 1 when search changes
+  useMemo(() => setPage(1), [busca]);
 
   const openProduct = (p: ProdutoDetalhe) => {
     setSelected(p);
