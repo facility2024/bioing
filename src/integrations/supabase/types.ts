@@ -136,24 +136,57 @@ export type Database = {
       }
       configuracoes_envio: {
         Row: {
+          altura_cm: number
+          cep_origem: string | null
+          comprimento_cm: number
           created_at: string
           delay_segundos: number
+          frete_fixo: number | null
+          frete_gratis_acima: number | null
           id: string
+          largura_cm: number
+          mao_do_correio: string | null
+          peso_padrao_kg: number
+          prazo_adicional_dias: number
           updated_at: string
+          usa_pac: boolean
+          usa_sedex: boolean
           whatsapp_destino: string | null
         }
         Insert: {
+          altura_cm?: number
+          cep_origem?: string | null
+          comprimento_cm?: number
           created_at?: string
           delay_segundos?: number
+          frete_fixo?: number | null
+          frete_gratis_acima?: number | null
           id?: string
+          largura_cm?: number
+          mao_do_correio?: string | null
+          peso_padrao_kg?: number
+          prazo_adicional_dias?: number
           updated_at?: string
+          usa_pac?: boolean
+          usa_sedex?: boolean
           whatsapp_destino?: string | null
         }
         Update: {
+          altura_cm?: number
+          cep_origem?: string | null
+          comprimento_cm?: number
           created_at?: string
           delay_segundos?: number
+          frete_fixo?: number | null
+          frete_gratis_acima?: number | null
           id?: string
+          largura_cm?: number
+          mao_do_correio?: string | null
+          peso_padrao_kg?: number
+          prazo_adicional_dias?: number
           updated_at?: string
+          usa_pac?: boolean
+          usa_sedex?: boolean
           whatsapp_destino?: string | null
         }
         Relationships: []
