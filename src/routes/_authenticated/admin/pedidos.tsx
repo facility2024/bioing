@@ -49,9 +49,12 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive" | "o
   cancelado: "destructive",
 };
 
+const PAGE_SIZE = 10;
+
 function PedidosAdmin() {
   const qc = useQueryClient();
   const [sel, setSel] = useState<Pedido | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data: pedidos, isLoading } = useQuery({
     queryKey: ["admin-pedidos"],
