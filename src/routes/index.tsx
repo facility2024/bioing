@@ -118,10 +118,8 @@ function Storefront() {
 
 function ProductCard({ produto, onOpen }: { produto: ProdutoDetalhe; onOpen: () => void }) {
   const { add } = useCart();
-  const [hoverIdx, setHoverIdx] = useState(0);
 
-  const gallery = [produto.imagem_url, ...(produto.imagens ?? [])].filter(Boolean) as string[];
-  const currentImage = gallery[hoverIdx] ?? gallery[0] ?? null;
+  const mainImage = produto.imagem_url ?? null;
   const semEstoque = produto.controla_estoque && (produto.estoque ?? 0) <= 0;
 
   const handleAdd = (e: React.MouseEvent) => {
@@ -135,49 +133,26 @@ function ProductCard({ produto, onOpen }: { produto: ProdutoDetalhe; onOpen: () 
     toast.success(`${produto.nome} adicionado ao carrinho`);
   };
 
-  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (gallery.length < 2) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const idx = Math.min(gallery.length - 1, Math.max(0, Math.floor((x / rect.width) * gallery.length)));
-    setHoverIdx(idx);
-  };
-
   return (
     <div
       onClick={onOpen}
       className="group cursor-pointer rounded-xl border bg-card overflow-hidden flex flex-col hover:shadow-lg transition-shadow"
     >
-      <div
-        className="aspect-square bg-white overflow-hidden relative"
-        onMouseMove={handleMove}
-        onMouseLeave={() => setHoverIdx(0)}
-      >
-        {currentImage ? (
+      <div className="aspect-square bg-white overflow-hidden relative">
+        {mainImage ? (
           <img
-            src={currentImage}
+            src={mainImage}
             alt={produto.nome}
             loading="lazy"
-            className="h-full w-full object-contain transition-opacity duration-200"
+            className="h-full w-full object-contain"
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center text-muted-foreground">
             <ShoppingBag className="h-10 w-10" />
           </div>
         )}
-        {gallery.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-            {gallery.map((_, i) => (
-              <span
-                key={i}
-                className={`h-1 w-4 rounded-full transition ${
-                  i === hoverIdx ? "bg-primary" : "bg-muted-foreground/30"
-                }`}
-              />
-            ))}
-          </div>
-        )}
       </div>
+
       <div className="p-4 flex flex-col flex-1 gap-2">
         <h3 className="font-semibold text-sm md:text-base line-clamp-2 min-h-[2.5rem]">{produto.nome}</h3>
         {produto.descricao && (
