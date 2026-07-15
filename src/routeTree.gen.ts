@@ -24,6 +24,7 @@ import { Route as AuthenticatedAdminConfiguracoesLojaRouteImport } from './route
 import { Route as AuthenticatedAdminConfiguracoesEnvioRouteImport } from './routes/_authenticated/admin/configuracoes-envio'
 import { Route as AuthenticatedAdminClientesRouteImport } from './routes/_authenticated/admin/clientes'
 import { Route as AuthenticatedAdminCategoriasRouteImport } from './routes/_authenticated/admin/categorias'
+import { Route as ApiPublicCronCleanupPedidosPdfRouteImport } from './routes/api/public/cron/cleanup-pedidos-pdf'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -109,6 +110,12 @@ const AuthenticatedAdminCategoriasRoute =
     path: '/categorias',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const ApiPublicCronCleanupPedidosPdfRoute =
+  ApiPublicCronCleanupPedidosPdfRouteImport.update({
+    id: '/api/public/cron/cleanup-pedidos-pdf',
+    path: '/api/public/cron/cleanup-pedidos-pdf',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
   '/admin/slides': typeof AuthenticatedAdminSlidesRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/cron/cleanup-pedidos-pdf': typeof ApiPublicCronCleanupPedidosPdfRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -140,6 +148,7 @@ export interface FileRoutesByTo {
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
   '/admin/slides': typeof AuthenticatedAdminSlidesRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/api/public/cron/cleanup-pedidos-pdf': typeof ApiPublicCronCleanupPedidosPdfRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -158,6 +167,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/produtos': typeof AuthenticatedAdminProdutosRoute
   '/_authenticated/admin/slides': typeof AuthenticatedAdminSlidesRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/cron/cleanup-pedidos-pdf': typeof ApiPublicCronCleanupPedidosPdfRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/admin/produtos'
     | '/admin/slides'
     | '/admin/'
+    | '/api/public/cron/cleanup-pedidos-pdf'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/admin/produtos'
     | '/admin/slides'
     | '/admin'
+    | '/api/public/cron/cleanup-pedidos-pdf'
   id:
     | '__root__'
     | '/'
@@ -208,12 +220,14 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/produtos'
     | '/_authenticated/admin/slides'
     | '/_authenticated/admin/'
+    | '/api/public/cron/cleanup-pedidos-pdf'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicCronCleanupPedidosPdfRoute: typeof ApiPublicCronCleanupPedidosPdfRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -323,6 +337,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriasRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/api/public/cron/cleanup-pedidos-pdf': {
+      id: '/api/public/cron/cleanup-pedidos-pdf'
+      path: '/api/public/cron/cleanup-pedidos-pdf'
+      fullPath: '/api/public/cron/cleanup-pedidos-pdf'
+      preLoaderRoute: typeof ApiPublicCronCleanupPedidosPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -378,17 +399,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicCronCleanupPedidosPdfRoute: ApiPublicCronCleanupPedidosPdfRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

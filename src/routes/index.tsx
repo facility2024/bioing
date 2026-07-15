@@ -12,7 +12,8 @@ import { ProductDetailDialog, type ProdutoDetalhe } from "@/components/product-d
 import { HomeSlider } from "@/components/home-slider";
 import { toast } from "sonner";
 
-const LOGO_URL = "https://http2.mlstatic.com/D_NQ_NP_647118-MLA112443697393_052026-F.jpg";
+import logoAsset from "@/assets/ingredientes-bio-logo.png.asset.json";
+const LOGO_URL = logoAsset.url;
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -158,10 +159,10 @@ function StoreHeader({ busca, setBusca }: { busca: string; setBusca: (v: string)
         <Link to="/" className="shrink-0">
           <img
             src={LOGO_URL}
-            alt="Logo"
-            width={64}
-            height={64}
-            className="h-10 w-10 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain rounded-md bg-white p-1"
+            alt="Ingredientes Bio"
+            width={180}
+            height={110}
+            className="h-12 sm:h-14 md:h-16 w-auto object-contain"
           />
         </Link>
 
