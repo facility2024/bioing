@@ -20,6 +20,7 @@ type Slide = {
   link_url: string | null;
   ordem: number;
   ativo: boolean;
+  intervalo_segundos: number | null;
 };
 
 function SlidesAdmin() {
