@@ -358,3 +358,61 @@ function ProductCard({ produto, onOpen }: { produto: ProdutoDetalhe; onOpen: () 
     </div>
   );
 }
+
+function Pagination({
+  current,
+  total,
+  onChange,
+}: {
+  current: number;
+  total: number;
+  onChange: (n: number) => void;
+}) {
+  const pages: (number | "…")[] = [];
+  const push = (v: number | "…") => pages.push(v);
+  const window = 1;
+  push(1);
+  const start = Math.max(2, current - window);
+  const end = Math.min(total - 1, current + window);
+  if (start > 2) push("…");
+  for (let i = start; i <= end; i++) push(i);
+  if (end < total - 1) push("…");
+  if (total > 1) push(total);
+
+  return (
+    <nav className="mt-8 flex items-center justify-center gap-1 flex-wrap" aria-label="Paginação">
+      <button
+        onClick={() => onChange(Math.max(1, current - 1))}
+        disabled={current === 1}
+        className="h-9 px-3 rounded-md border text-sm hover:bg-muted disabled:opacity-40 disabled:pointer-events-none transition-colors"
+      >
+        Anterior
+      </button>
+      {pages.map((p, i) =>
+        p === "…" ? (
+          <span key={`e-${i}`} className="h-9 w-9 grid place-items-center text-muted-foreground">…</span>
+        ) : (
+          <button
+            key={p}
+            onClick={() => onChange(p)}
+            aria-current={p === current ? "page" : undefined}
+            className={`h-9 min-w-9 px-3 rounded-md border text-sm transition-colors ${
+              p === current
+                ? "bg-primary text-primary-foreground border-primary"
+                : "hover:bg-muted"
+            }`}
+          >
+            {p}
+          </button>
+        ),
+      )}
+      <button
+        onClick={() => onChange(Math.min(total, current + 1))}
+        disabled={current === total}
+        className="h-9 px-3 rounded-md border text-sm hover:bg-muted disabled:opacity-40 disabled:pointer-events-none transition-colors"
+      >
+        Próxima
+      </button>
+    </nav>
+  );
+}
