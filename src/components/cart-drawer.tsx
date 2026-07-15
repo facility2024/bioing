@@ -3,10 +3,13 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Minus, Plus, Trash2 } from "lucide-react";
 import { useCart, formatBRL } from "@/hooks/use-cart";
 import { useState } from "react";
+import { CheckoutDialog } from "@/components/checkout-dialog";
 
 export function CartDrawer() {
   const { items, count, total, setQty, remove, clear } = useCart();
   const [open, setOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
