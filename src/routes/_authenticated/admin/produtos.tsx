@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, X, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Package, Copy, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL } from "@/hooks/use-cart";
 
@@ -390,7 +390,44 @@ function ProdutosAdmin() {
               </div>
               <Switch checked={form.ativo} onCheckedChange={(v) => setForm({ ...form, ativo: v })} />
             </div>
+
+            {form.id && (
+              <div className="space-y-1.5 rounded-md border p-3 bg-muted/30">
+                <Label className="text-sm flex items-center gap-1.5">
+                  <Link2 className="h-3.5 w-3.5" />
+                  Link direto do produto
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Compartilhe este link em redes sociais — ao clicar, o produto abre direto na loja.
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={`${typeof window !== "undefined" ? window.location.origin : ""}/?produto=${form.id}`}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="font-mono text-xs"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={async () => {
+                      const url = `${window.location.origin}/?produto=${form.id}`;
+                      try {
+                        await navigator.clipboard.writeText(url);
+                        toast.success("Link copiado!");
+                      } catch {
+                        toast.error("Não foi possível copiar");
+                      }
+                    }}
+                  >
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copiar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
+
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>
