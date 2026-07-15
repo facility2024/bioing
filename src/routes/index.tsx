@@ -1,12 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Package, Truck } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ShoppingBag, Package, Truck, Search, User, PackageSearch } from "lucide-react";
 import { CartProvider, useCart, formatBRL } from "@/hooks/use-cart";
 import { CartDrawer } from "@/components/cart-drawer";
 import { ProductDetailDialog, type ProdutoDetalhe } from "@/components/product-detail-dialog";
+import { HomeSlider } from "@/components/home-slider";
 import { toast } from "sonner";
 
 const LOGO_URL = "https://http2.mlstatic.com/D_NQ_NP_647118-MLA112443697393_052026-F.jpg";
@@ -30,6 +32,7 @@ export const Route = createFileRoute("/")({
 function Storefront() {
   const [selected, setSelected] = useState<ProdutoDetalhe | null>(null);
   const [open, setOpen] = useState(false);
+  const [busca, setBusca] = useState("");
 
   const { data: produtos, isLoading, error } = useQuery({
     queryKey: ["produtos-loja"],
@@ -44,6 +47,17 @@ function Storefront() {
     },
   });
 
+  const filtrados = useMemo(() => {
+    if (!produtos) return [];
+    const q = busca.trim().toLowerCase();
+    if (!q) return produtos;
+    return produtos.filter(
+      (p) =>
+        p.nome.toLowerCase().includes(q) ||
+        (p.descricao ?? "").toLowerCase().includes(q),
+    );
+  }, [produtos, busca]);
+
   const openProduct = (p: ProdutoDetalhe) => {
     setSelected(p);
     setOpen(true);
@@ -51,20 +65,9 @@ function Storefront() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-header sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col items-center gap-3 relative">
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-            <CartDrawer />
-          </div>
-          <img
-            src={LOGO_URL}
-            alt="Logo"
-            width={120}
-            height={120}
-            className="h-[120px] w-[120px] object-contain rounded-md"
-          />
-        </div>
-      </header>
+      <StoreHeader busca={busca} setBusca={setBusca} />
+
+      <HomeSlider />
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {isLoading && (
@@ -98,21 +101,118 @@ function Storefront() {
           </div>
         )}
 
-        {produtos && produtos.length > 0 && (
+        {produtos && produtos.length > 0 && filtrados.length === 0 && (
+          <div className="text-center py-16 text-muted-foreground">
+            Nenhum produto encontrado para “{busca}”.
+          </div>
+        )}
+
+        {filtrados.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {produtos.map((p) => (
+            {filtrados.map((p) => (
               <ProductCard key={p.id} produto={p} onOpen={() => openProduct(p)} />
             ))}
           </div>
         )}
       </main>
 
-      <footer className="border-t mt-16 py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} — Todos os direitos reservados.
-      </footer>
-
       <ProductDetailDialog produto={selected} open={open} onOpenChange={setOpen} />
     </div>
+  );
+}
+
+function StoreHeader({ busca, setBusca }: { busca: string; setBusca: (v: string) => void }) {
+  const { count, total } = useCart();
+
+  return (
+    <header className="bg-header sticky top-0 z-20 border-b">
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap md:flex-nowrap">
+        <Link to="/" className="shrink-0">
+          <img
+            src={LOGO_URL}
+            alt="Logo"
+            width={64}
+            height={64}
+            className="h-14 w-14 md:h-16 md:w-16 object-contain rounded-md bg-white p-1"
+          />
+        </Link>
+
+        <div className="order-3 md:order-2 w-full md:flex-1 md:min-w-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar produtos..."
+              className="pl-9 bg-white h-10 rounded-full"
+            />
+          </div>
+        </div>
+
+        <nav className="order-2 md:order-3 ml-auto flex items-center gap-1 sm:gap-3 text-white">
+          <HeaderAction
+            to="/auth"
+            icon={<User className="h-5 w-5" />}
+            title="Boas-vindas!"
+            subtitle="Entrar ou cadastrar"
+          />
+          <HeaderAction
+            onClick={() =>
+              toast.info("Para acompanhar seu pedido, entre em contato pelo WhatsApp da loja.")
+            }
+            icon={<PackageSearch className="h-5 w-5" />}
+            title="Acompanhar"
+            subtitle="pedidos"
+          />
+          <div className="flex items-center gap-2">
+            <CartDrawer />
+            <div className="hidden sm:flex flex-col leading-tight text-white">
+              <span className="text-[11px] opacity-90">Cesta</span>
+              <span className="text-xs font-semibold">
+                {count > 0 ? formatBRL(total) : "R$ 0,00"}
+              </span>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+function HeaderAction({
+  to,
+  onClick,
+  icon,
+  title,
+  subtitle,
+}: {
+  to?: string;
+  onClick?: () => void;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  const content = (
+    <span className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/10 transition-colors">
+      <span className="shrink-0">{icon}</span>
+      <span className="hidden md:flex flex-col leading-tight text-left">
+        <span className="text-[11px] opacity-90">{title}</span>
+        <span className="text-xs font-semibold">{subtitle}</span>
+      </span>
+    </span>
+  );
+
+  if (to) {
+    return (
+      <Link to={to} className="text-white">
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <button onClick={onClick} className="text-white">
+      {content}
+    </button>
   );
 }
 
