@@ -140,7 +140,7 @@ function RootComponent() {
         <SiteFooter />
       </div>
       <OfferPopup />
-      <ChatWidget />
+      
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
