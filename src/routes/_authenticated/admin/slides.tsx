@@ -182,6 +182,26 @@ function SlidesAdmin() {
                   <p className="text-xs text-muted-foreground">Ordem: {s.ordem}</p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Label className="text-xs whitespace-nowrap">Tempo (s)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    defaultValue={s.intervalo_segundos ?? 5}
+                    className="h-8 w-20"
+                    onBlur={async (e) => {
+                      const v = Math.max(1, parseInt(e.target.value, 10) || 5);
+                      if (v === (s.intervalo_segundos ?? 5)) return;
+                      const { error } = await supabase
+                        .from("home_slides")
+                        .update({ intervalo_segundos: v })
+                        .eq("id", s.id);
+                      if (error) return toast.error(error.message);
+                      toast.success("Tempo atualizado");
+                      refresh();
+                    }}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
                   <Label className="text-xs">Ativo</Label>
                   <Switch checked={s.ativo} onCheckedChange={() => toggleAtivo(s)} />
                 </div>
@@ -195,6 +215,12 @@ function SlidesAdmin() {
                 </Button>
               </li>
             ))}
+          </ul>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
           </ul>
         </CardContent>
       </Card>
