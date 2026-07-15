@@ -13,6 +13,11 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    ssr: {
+      // pdf-lib ships CJS + a tslib helper that Vite's SSR loader can't
+      // destructure by default. Bundle both together for the Worker runtime.
+      noExternal: ["pdf-lib", "tslib", "@pdf-lib/standard-fonts", "@pdf-lib/upng"],
+    },
     optimizeDeps: {
       // Pre-bundle heavy deps used across admin pages so navegar entre seções
       // não dispara "new dependencies optimized" + full reload no dev.
