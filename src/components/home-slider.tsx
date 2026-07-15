@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-type Slide = { id: string; imagem_url: string; link_url: string | null };
+type Slide = { id: string; imagem_url: string; link_url: string | null; intervalo_segundos: number | null };
 
 export function HomeSlider() {
   const { data: slides } = useQuery({
@@ -10,7 +10,7 @@ export function HomeSlider() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_slides")
-        .select("id, imagem_url, link_url")
+        .select("id, imagem_url, link_url, intervalo_segundos")
         .eq("ativo", true)
         .order("ordem", { ascending: true });
       if (error) throw error;
@@ -22,9 +22,10 @@ export function HomeSlider() {
 
   useEffect(() => {
     if (!slides || slides.length <= 1) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % slides.length), 5000);
-    return () => clearInterval(t);
-  }, [slides]);
+    const secs = Math.max(1, Number(slides[idx]?.intervalo_segundos) || 5);
+    const t = setTimeout(() => setIdx((i) => (i + 1) % slides.length), secs * 1000);
+    return () => clearTimeout(t);
+  }, [slides, idx]);
 
   if (!slides || slides.length === 0) return null;
 

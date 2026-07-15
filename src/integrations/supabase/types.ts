@@ -211,6 +211,7 @@ export type Database = {
           created_at: string
           id: string
           imagem_url: string
+          intervalo_segundos: number
           link_url: string | null
           ordem: number
           updated_at: string
@@ -220,6 +221,7 @@ export type Database = {
           created_at?: string
           id?: string
           imagem_url: string
+          intervalo_segundos?: number
           link_url?: string | null
           ordem?: number
           updated_at?: string
@@ -229,6 +231,7 @@ export type Database = {
           created_at?: string
           id?: string
           imagem_url?: string
+          intervalo_segundos?: number
           link_url?: string | null
           ordem?: number
           updated_at?: string

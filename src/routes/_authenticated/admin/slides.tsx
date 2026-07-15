@@ -20,12 +20,14 @@ type Slide = {
   link_url: string | null;
   ordem: number;
   ativo: boolean;
+  intervalo_segundos: number | null;
 };
 
 function SlidesAdmin() {
   const qc = useQueryClient();
   const [imagem, setImagem] = useState("");
   const [link, setLink] = useState("");
+  const [intervalo, setIntervalo] = useState("5");
   const [saving, setSaving] = useState(false);
 
   const { data: slides, isLoading } = useQuery({
@@ -50,17 +52,20 @@ function SlidesAdmin() {
     if (!imagem.trim()) return toast.error("Informe a URL da imagem");
     setSaving(true);
     const nextOrdem = (slides?.length ?? 0) + 1;
+    const secs = Math.max(1, parseInt(intervalo, 10) || 5);
     const { error } = await supabase.from("home_slides").insert({
       imagem_url: imagem.trim(),
       link_url: link.trim() || null,
       ordem: nextOrdem,
       ativo: true,
+      intervalo_segundos: secs,
     });
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Slide adicionado");
     setImagem("");
     setLink("");
+    setIntervalo("5");
     refresh();
   };
 
@@ -99,7 +104,7 @@ function SlidesAdmin() {
           <CardTitle>Adicionar slide</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleAdd} className="grid gap-4 md:grid-cols-[1fr_1fr_auto] items-end">
+          <form onSubmit={handleAdd} className="grid gap-4 md:grid-cols-[1fr_1fr_140px_auto] items-end">
             <div className="space-y-1">
               <Label>URL da imagem</Label>
               <Input
@@ -114,6 +119,15 @@ function SlidesAdmin() {
                 placeholder="https://..."
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Tempo (segundos)</Label>
+              <Input
+                type="number"
+                min={1}
+                value={intervalo}
+                onChange={(e) => setIntervalo(e.target.value)}
               />
             </div>
             <Button type="submit" disabled={saving}>
@@ -166,6 +180,26 @@ function SlidesAdmin() {
                     <p className="text-xs text-primary truncate">→ {s.link_url}</p>
                   )}
                   <p className="text-xs text-muted-foreground">Ordem: {s.ordem}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs whitespace-nowrap">Tempo (s)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    defaultValue={s.intervalo_segundos ?? 5}
+                    className="h-8 w-20"
+                    onBlur={async (e) => {
+                      const v = Math.max(1, parseInt(e.target.value, 10) || 5);
+                      if (v === (s.intervalo_segundos ?? 5)) return;
+                      const { error } = await supabase
+                        .from("home_slides")
+                        .update({ intervalo_segundos: v })
+                        .eq("id", s.id);
+                      if (error) return toast.error(error.message);
+                      toast.success("Tempo atualizado");
+                      refresh();
+                    }}
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">Ativo</Label>
