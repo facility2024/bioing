@@ -120,7 +120,7 @@ export function AdminSidebar() {
             <SidebarMenuButton
               asChild
               tooltip="Ver site"
-              className="transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:shadow-black/10 active:scale-[0.97] text-primary"
+              className="transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:shadow-black/10 active:scale-[0.97] text-white"
             >
               <a href="/" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4" />
