@@ -71,6 +71,39 @@ export type Database = {
         }
         Relationships: []
       }
+      configuracoes_empresa: {
+        Row: {
+          created_at: string
+          email_contato: string | null
+          endereco_empresa: string | null
+          id: string
+          logo_url: string | null
+          nome_empresa: string | null
+          updated_at: string
+          whatsapp_atendimento: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_contato?: string | null
+          endereco_empresa?: string | null
+          id?: string
+          logo_url?: string | null
+          nome_empresa?: string | null
+          updated_at?: string
+          whatsapp_atendimento?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_contato?: string | null
+          endereco_empresa?: string | null
+          id?: string
+          logo_url?: string | null
+          nome_empresa?: string | null
+          updated_at?: string
+          whatsapp_atendimento?: string | null
+        }
+        Relationships: []
+      }
       configuracoes_envio: {
         Row: {
           created_at: string
