@@ -120,10 +120,14 @@ export async function gerarESalvarPedidoPdf(input: PedidoPdfInput): Promise<stri
     return null;
   }
 
-  const { data: publicData } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
-  if (publicData?.publicUrl) return publicData.publicUrl;
-
-  const { data: signed } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 7);
+  // Bucket é privado — sempre gerar signed URL (public URL retornaria 404 "Bucket not found").
+  const { data: signed, error: signErr } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .createSignedUrl(path, 60 * 60 * 24 * 7);
+  if (signErr) {
+    console.error("[pedido-pdf] signed url falhou:", signErr);
+    return null;
+  }
   return signed?.signedUrl ?? null;
 }
 
