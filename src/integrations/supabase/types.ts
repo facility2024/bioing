@@ -205,6 +205,36 @@ export type Database = {
           },
         ]
       }
+      home_slides: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          imagem_url: string
+          link_url: string | null
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          imagem_url: string
+          link_url?: string | null
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          imagem_url?: string
+          link_url?: string | null
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       itens_pedido: {
         Row: {
           created_at: string
