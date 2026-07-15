@@ -228,8 +228,8 @@ function StoreHeader({ busca, setBusca }: { busca: string; setBusca: (v: string)
                 >
                   <User className="h-5 w-5" />
                   <div className="flex flex-col leading-tight">
-                    <span className="text-xs text-muted-foreground">Boas-vindas!</span>
-                    <span className="text-sm font-semibold">Entrar ou cadastrar</span>
+                    <span className="text-xs text-muted-foreground">Boas-vindas</span>
+                    <span className="text-sm font-semibold">Admin — Entrar</span>
                   </div>
                 </Link>
                 <button
