@@ -58,27 +58,8 @@ function AuthPage() {
     navigate({ to: "/admin/dashboard" });
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const emailParse = emailSchema.safeParse(email);
-    const passParse = passwordSchema.safeParse(password);
-    if (!emailParse.success) return toast.error(emailParse.error.errors[0].message);
-    if (!passParse.success) return toast.error(passParse.error.errors[0].message);
 
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: emailParse.data,
-      password: passParse.data,
-      options: { emailRedirectTo: `${window.location.origin}/admin/dashboard` },
-    });
-    setLoading(false);
 
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Cadastro criado! Você já pode entrar.");
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/40 flex items-center justify-center px-4 py-12">
