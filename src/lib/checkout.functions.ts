@@ -18,6 +18,7 @@ type CheckoutInput = {
   };
   itens: ItemPayload[];
   total: number;
+  origin?: string;
 };
 
 const WAPI_BASE = "https://api.w-api.app/v1";
