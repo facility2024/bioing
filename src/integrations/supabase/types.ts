@@ -128,6 +128,36 @@ export type Database = {
         }
         Relationships: []
       }
+      configuracoes_whatsapp: {
+        Row: {
+          api_token: string | null
+          ativa: boolean
+          created_at: string
+          id: string
+          instance_id: string | null
+          numero_conectado: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_token?: string | null
+          ativa?: boolean
+          created_at?: string
+          id?: string
+          instance_id?: string | null
+          numero_conectado?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_token?: string | null
+          ativa?: boolean
+          created_at?: string
+          id?: string
+          instance_id?: string | null
+          numero_conectado?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       enderecos: {
         Row: {
           bairro: string
