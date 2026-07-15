@@ -87,60 +87,31 @@ function AuthPage() {
           <Link to="/" className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <ShoppingBag className="h-7 w-7" />
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">Painel Administrativo</h1>
-          <p className="text-sm text-muted-foreground">Entre para gerenciar sua loja</p>
+          <h1 className="text-2xl font-bold tracking-tight">Boas vindas</h1>
+          <p className="text-sm text-muted-foreground">Somente administradores</p>
         </div>
 
         <Card>
-          <Tabs defaultValue="signin">
-            <CardHeader className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Criar Conta</TabsTrigger>
-              </TabsList>
-            </CardHeader>
-
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">E-mail</Label>
-                    <Input id="signin-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@exemplo.com" autoComplete="email" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Senha</Label>
-                    <Input id="signin-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Entrar
-                  </Button>
-                </CardContent>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp}>
-                <CardContent className="space-y-4">
-                  <CardDescription>
-                    O primeiro cadastro será promovido a <strong>administrador</strong> automaticamente.
-                  </CardDescription>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">E-mail</Label>
-                    <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@exemplo.com" autoComplete="email" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Senha</Label>
-                    <Input id="signup-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Criar conta
-                  </Button>
-                </CardContent>
-              </form>
-            </TabsContent>
-          </Tabs>
+          <CardHeader>
+            <CardTitle className="text-lg">Entrar</CardTitle>
+            <CardDescription>Acesse com seu e-mail e senha</CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSignIn}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signin-email">E-mail</Label>
+                <Input id="signin-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@exemplo.com" autoComplete="email" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signin-password">Senha</Label>
+                <Input id="signin-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Entrar
+              </Button>
+            </CardContent>
+          </form>
         </Card>
       </div>
     </div>
