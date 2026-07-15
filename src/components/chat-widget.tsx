@@ -19,6 +19,7 @@ export function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [showTeaser, setShowTeaser] = useState(false);
   const [teaserDismissed, setTeaserDismissed] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [step, setStep] = useState<Step>("greeting");
   const [msgs, setMsgs] = useState<Msg[]>([
     { from: "bot", text: "Olá! 👋 Posso te ajudar em algo? Tire suas dúvidas por aqui." },
