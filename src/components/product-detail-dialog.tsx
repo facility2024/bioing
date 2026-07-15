@@ -114,7 +114,7 @@ export function ProductDetailDialog({
             </div>
 
             {/* Info column */}
-            <div className="p-4 md:p-6 border-t md:border-t-0 md:border-l flex flex-col gap-4">
+            <div className="p-4 md:p-6 border-t lg:border-t-0 lg:border-l flex flex-col gap-4">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>Novo</span>
                 <span>·</span>
