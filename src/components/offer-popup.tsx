@@ -88,10 +88,12 @@ export function OfferPopup() {
                 // navegação interna: dispara um popstate para o app abrir o produto sem recarregar
                 if (!oferta.cta_url!.startsWith("http")) {
                   e.preventDefault();
+                  setOpen(false);
                   window.history.pushState({}, "", oferta.cta_url!);
                   window.dispatchEvent(new PopStateEvent("popstate"));
+                } else {
+                  setOpen(false);
                 }
-                setOpen(false);
               }}
             >
               {oferta.cta_texto || "Aproveitar"}
