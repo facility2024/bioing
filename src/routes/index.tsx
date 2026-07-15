@@ -182,8 +182,8 @@ function StoreHeader({ busca, setBusca }: { busca: string; setBusca: (v: string)
           <HeaderAction
             to="/auth"
             icon={<User className="h-5 w-5" />}
-            title="Boas-vindas!"
-            subtitle="Entrar"
+            title="Boas-vindas"
+            subtitle="Admin"
           />
           <HeaderAction
             onClick={() =>
