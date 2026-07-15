@@ -320,6 +320,7 @@ export type Database = {
           estoque: number
           id: string
           imagem_url: string | null
+          imagens: string[]
           nome: string
           preco: number
           updated_at: string
@@ -333,6 +334,7 @@ export type Database = {
           estoque?: number
           id?: string
           imagem_url?: string | null
+          imagens?: string[]
           nome: string
           preco: number
           updated_at?: string
@@ -346,6 +348,7 @@ export type Database = {
           estoque?: number
           id?: string
           imagem_url?: string | null
+          imagens?: string[]
           nome?: string
           preco?: number
           updated_at?: string
