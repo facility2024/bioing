@@ -63,17 +63,33 @@ function ConfigWhatsappPage() {
   }, [data]);
 
   const handleSave = async () => {
-    if (!data?.id) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("configuracoes_whatsapp")
-      .update({
-        instance_id: instanceId.trim() || null,
-        api_token: apiToken.trim() || null,
-        numero_conectado: numero.trim() || null,
-        ativa,
-      })
-      .eq("id", data.id);
+    const payload = {
+      instance_id: instanceId.trim() || null,
+      api_token: apiToken.trim() || null,
+      numero_conectado: numero.trim() || null,
+      ativa,
+    };
+    let error;
+    if (data?.id) {
+      const res = await supabase
+        .from("configuracoes_whatsapp")
+        .update(payload)
+        .eq("id", data.id)
+        .select()
+        .maybeSingle();
+      error = res.error;
+      if (!error && !res.data) {
+        error = { message: "Sem permissão para salvar (verifique se você é admin)." } as any;
+      }
+    } else {
+      const res = await supabase
+        .from("configuracoes_whatsapp")
+        .insert(payload)
+        .select()
+        .maybeSingle();
+      error = res.error;
+    }
     setSaving(false);
     if (error) {
       toast.error("Erro ao salvar: " + error.message);
@@ -288,7 +304,7 @@ function ConfigWhatsappPage() {
               onChange={(e) => setTestMessage(e.target.value)}
             />
           </div>
-          <Button onClick={handleSendTest} disabled={sending || !ativa}>
+          <Button onClick={handleSendTest} disabled={sending}>
             {sending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -296,11 +312,9 @@ function ConfigWhatsappPage() {
             )}
             Enviar mensagem de teste
           </Button>
-          {!ativa && (
-            <p className="text-xs text-muted-foreground">
-              Ative a instância acima e salve antes de enviar mensagens.
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            Usa o Instance ID e o Token preenchidos acima. Não precisa salvar antes de testar.
+          </p>
         </CardContent>
       </Card>
     </div>
