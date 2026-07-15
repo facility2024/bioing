@@ -26,7 +26,22 @@ export function ChatWidget() {
   const [input, setInput] = useState("");
   const [nome, setNome] = useState("");
   const [whats, setWhats] = useState("");
+  const [typing, setTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Envia mensagens do bot de forma "humanizada": mostra "digitando..." e
+  // aguarda um tempo proporcional ao tamanho do texto antes de exibir.
+  const sendBot = (text: string, button?: Msg["button"], baseDelay = 500) => {
+    setTyping(true);
+    const readingDelay = Math.min(2400, Math.max(700, text.length * 28));
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        setMsgs((m) => [...m, { from: "bot", text, button }]);
+        setTyping(false);
+        resolve();
+      }, baseDelay + readingDelay);
+    });
+  };
 
   // Sobe teaser depois de 8s
   useEffect(() => {
