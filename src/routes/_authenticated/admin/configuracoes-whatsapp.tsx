@@ -259,6 +259,50 @@ function ConfigWhatsappPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Send className="h-4 w-4" /> Enviar mensagem de teste
+          </CardTitle>
+          <CardDescription>
+            Envie uma mensagem para um número seu para confirmar que a integração está funcionando.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="test-phone">Número de destino (com DDI + DDD)</Label>
+            <Input
+              id="test-phone"
+              placeholder="Ex.: 5511999999999"
+              value={testPhone}
+              onChange={(e) => setTestPhone(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="test-message">Mensagem</Label>
+            <Textarea
+              id="test-message"
+              rows={3}
+              value={testMessage}
+              onChange={(e) => setTestMessage(e.target.value)}
+            />
+          </div>
+          <Button onClick={handleSendTest} disabled={sending || !ativa}>
+            {sending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="mr-2 h-4 w-4" />
+            )}
+            Enviar mensagem de teste
+          </Button>
+          {!ativa && (
+            <p className="text-xs text-muted-foreground">
+              Ative a instância acima e salve antes de enviar mensagens.
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
