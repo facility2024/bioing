@@ -65,6 +65,13 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       .filter(Boolean)
       .join(" - ");
 
+    const rodapeEmpresa =
+      `\n\n━━━━━━━━━━━━━━━\n` +
+      `*BIOCON DO BRASIL PRODUTOS E SERVICOS LTDA - ME*\n` +
+      `CNPJ: 51.909.772/0001-81\n` +
+      `Endereço: R. São Bartolomeu, 785 - Vila San Martin, Sumaré - SP, 13180-310\n` +
+      `✉️ *E-mail:* vendas@biocondobrasil.com.br`;
+
     const mensagemAtendente =
       `🛒 *Novo pedido recebido!*\n\n` +
       `👤 *Cliente:* ${data.cliente.nome}\n` +
@@ -73,7 +80,8 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       (enderecoTxt ? `📍 *Endereço:* ${enderecoTxt}\n` : "") +
       (data.cliente.observacoes ? `📝 *Obs:* ${data.cliente.observacoes}\n` : "") +
       `\n*Itens:*\n${itensTxt}\n\n` +
-      `💰 *Total:* ${formatBRL(data.total)}`;
+      `💰 *Total:* ${formatBRL(data.total)}` +
+      rodapeEmpresa;
 
     const mensagemCliente =
       `Olá *${data.cliente.nome}*! 👋\n\n` +
@@ -81,7 +89,8 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       `*Resumo do pedido:*\n${itensTxt}\n\n` +
       `💰 *Total:* ${formatBRL(data.total)}\n\n` +
       `Um atendente já está com sua solicitação e vai continuar por aqui mesmo pelo WhatsApp. 🚀\n` +
-      `Fique à vontade, ele já está pronto para te atender!`;
+      `Fique à vontade, ele já está pronto para te atender!` +
+      rodapeEmpresa;
 
     async function enviar(phone: string, message: string) {
       const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(config!.instance_id!)}`;
