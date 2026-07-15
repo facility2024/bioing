@@ -35,18 +35,18 @@ export function HomeSlider() {
     <img
       src={current.imagem_url}
       alt="Banner promocional"
-      className="w-full h-[250px] object-cover"
+      className="w-full h-full object-cover"
       loading="eager"
     />
   );
 
   return (
     <div
-      className="w-full relative bg-muted overflow-hidden rounded-xl shadow-2xl ring-1 ring-black/5 transition-transform duration-500 hover:scale-[1.02] hover:-translate-y-1 max-w-6xl mx-auto -mt-6 md:-mt-8"
-      style={{ height: 250, boxShadow: "0 25px 50px -12px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05)" }}
+      className="w-full relative bg-muted overflow-hidden rounded-xl shadow-2xl ring-1 ring-black/5 transition-transform duration-500 hover:scale-[1.02] hover:-translate-y-1 max-w-6xl mx-auto -mt-4 md:-mt-8 h-32 sm:h-48 md:h-[250px]"
+      style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05)" }}
     >
       {current.link_url ? (
-        <a href={current.link_url} target="_blank" rel="noreferrer">{img}</a>
+        <a href={current.link_url} target="_blank" rel="noreferrer" className="block h-full w-full">{img}</a>
       ) : (
         img
       )}
