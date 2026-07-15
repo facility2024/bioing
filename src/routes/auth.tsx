@@ -62,7 +62,14 @@ function AuthPage() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/40 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/40 flex items-center justify-center px-4 py-12 relative">
+      <Link
+        to="/"
+        aria-label="Fechar e voltar para a home"
+        className="absolute top-4 right-4 h-10 w-10 rounded-full bg-background border shadow-sm grid place-items-center text-muted-foreground hover:text-foreground hover:bg-muted transition"
+      >
+        <X className="h-5 w-5" />
+      </Link>
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <Link to="/" className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
