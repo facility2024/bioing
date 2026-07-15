@@ -25,6 +25,7 @@ import { Route as AuthenticatedAdminConfiguracoesLojaRouteImport } from './route
 import { Route as AuthenticatedAdminConfiguracoesEnvioRouteImport } from './routes/_authenticated/admin/configuracoes-envio'
 import { Route as AuthenticatedAdminClientesRouteImport } from './routes/_authenticated/admin/clientes'
 import { Route as AuthenticatedAdminCategoriasRouteImport } from './routes/_authenticated/admin/categorias'
+import { Route as ApiPublicPedidoNumeroRouteImport } from './routes/api/public/pedido.$numero'
 import { Route as ApiPublicCronCleanupPedidosPdfRouteImport } from './routes/api/public/cron/cleanup-pedidos-pdf'
 
 const AuthRoute = AuthRouteImport.update({
@@ -117,6 +118,11 @@ const AuthenticatedAdminCategoriasRoute =
     path: '/categorias',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const ApiPublicPedidoNumeroRoute = ApiPublicPedidoNumeroRouteImport.update({
+  id: '/api/public/pedido/$numero',
+  path: '/api/public/pedido/$numero',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronCleanupPedidosPdfRoute =
   ApiPublicCronCleanupPedidosPdfRouteImport.update({
     id: '/api/public/cron/cleanup-pedidos-pdf',
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/admin/slides': typeof AuthenticatedAdminSlidesRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/cron/cleanup-pedidos-pdf': typeof ApiPublicCronCleanupPedidosPdfRoute
+  '/api/public/pedido/$numero': typeof ApiPublicPedidoNumeroRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/admin/slides': typeof AuthenticatedAdminSlidesRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/public/cron/cleanup-pedidos-pdf': typeof ApiPublicCronCleanupPedidosPdfRoute
+  '/api/public/pedido/$numero': typeof ApiPublicPedidoNumeroRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -178,6 +186,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/slides': typeof AuthenticatedAdminSlidesRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/cron/cleanup-pedidos-pdf': typeof ApiPublicCronCleanupPedidosPdfRoute
+  '/api/public/pedido/$numero': typeof ApiPublicPedidoNumeroRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/admin/slides'
     | '/admin/'
     | '/api/public/cron/cleanup-pedidos-pdf'
+    | '/api/public/pedido/$numero'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/admin/slides'
     | '/admin'
     | '/api/public/cron/cleanup-pedidos-pdf'
+    | '/api/public/pedido/$numero'
   id:
     | '__root__'
     | '/'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/slides'
     | '/_authenticated/admin/'
     | '/api/public/cron/cleanup-pedidos-pdf'
+    | '/api/public/pedido/$numero'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -241,6 +253,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiPublicCronCleanupPedidosPdfRoute: typeof ApiPublicCronCleanupPedidosPdfRoute
+  ApiPublicPedidoNumeroRoute: typeof ApiPublicPedidoNumeroRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -357,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCategoriasRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/api/public/pedido/$numero': {
+      id: '/api/public/pedido/$numero'
+      path: '/api/public/pedido/$numero'
+      fullPath: '/api/public/pedido/$numero'
+      preLoaderRoute: typeof ApiPublicPedidoNumeroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/cleanup-pedidos-pdf': {
       id: '/api/public/cron/cleanup-pedidos-pdf'
       path: '/api/public/cron/cleanup-pedidos-pdf'
@@ -422,6 +442,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiPublicCronCleanupPedidosPdfRoute: ApiPublicCronCleanupPedidosPdfRoute,
+  ApiPublicPedidoNumeroRoute: ApiPublicPedidoNumeroRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
