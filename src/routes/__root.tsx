@@ -129,8 +129,18 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <div className="min-h-screen flex flex-col">
+        <div className="flex-1">
+          <Outlet />
+        </div>
+        <footer className="bg-header text-white mt-auto">
+          <div className="max-w-6xl mx-auto px-4 py-6 text-center text-sm">
+            © {new Date().getFullYear()} BioIng — Todos os direitos reservados.
+          </div>
+        </footer>
+      </div>
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
 }
+
