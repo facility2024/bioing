@@ -123,7 +123,23 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       );
     }
 
-    // ============ 2) TENTAR ENVIAR WHATSAPP (não bloqueia o pedido) ============
+    // ============ 2) GERAR PDF DO PEDIDO (link substitui o cupom) ============
+    let pdfUrl: string | null = null;
+    if (pedidoNumero) {
+      try {
+        const { gerarESalvarPedidoPdf } = await import("@/lib/pedido-pdf.server");
+        pdfUrl = await gerarESalvarPedidoPdf({
+          numero: pedidoNumero,
+          cliente: data.cliente,
+          itens: data.itens,
+          total: data.total,
+        });
+      } catch (e) {
+        console.error("[checkout] Falha ao gerar PDF (não bloqueia pedido):", e);
+      }
+    }
+
+    // ============ 3) TENTAR ENVIAR WHATSAPP (não bloqueia o pedido) ============
     const { data: config } = await supabaseAdmin
       .from("configuracoes_whatsapp")
       .select("instance_id, api_token, numero_conectado, ativa")
@@ -137,6 +153,8 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       `Endereço: R. São Bartolomeu, 785 - Vila San Martin, Sumaré - SP, 13180-310\n` +
       `✉️ *E-mail:* vendas@biocondobrasil.com.br`;
 
+    const linhaPdf = pdfUrl ? `\n\n📄 *Comprovante em PDF:* ${pdfUrl}\n_(link disponível por 7 dias)_` : "";
+
     const mensagemAtendente =
       `🛒 *Novo pedido ${pedidoNumero ?? ""}*\n\n` +
       `👤 *Cliente:* ${data.cliente.nome}\n` +
@@ -146,14 +164,16 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       (data.cliente.observacoes ? `📝 *Obs:* ${data.cliente.observacoes}\n` : "") +
       `\n*Itens:*\n${itensTxt}\n\n` +
       `💰 *Total:* ${formatBRL(data.total)}` +
+      linhaPdf +
       rodapeEmpresa;
 
     const mensagemCliente =
       `Olá *${data.cliente.nome}*! 👋\n\n` +
       `Recebemos seu pedido *${pedidoNumero ?? ""}* com sucesso! ✅\n\n` +
       `*Resumo do pedido:*\n${itensTxt}\n\n` +
-      `💰 *Total:* ${formatBRL(data.total)}\n\n` +
-      `Um atendente já está com sua solicitação e vai continuar por aqui mesmo pelo WhatsApp. 🚀` +
+      `💰 *Total:* ${formatBRL(data.total)}` +
+      linhaPdf +
+      `\n\nUm atendente já está com sua solicitação e vai continuar por aqui mesmo pelo WhatsApp. 🚀` +
       rodapeEmpresa;
 
     if (config?.instance_id && config?.api_token && config?.numero_conectado) {
