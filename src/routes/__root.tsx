@@ -131,18 +131,41 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ThemeApplier />
       <div className="min-h-screen flex flex-col">
         <div className="flex-1">
           <Outlet />
         </div>
-        <footer className="bg-header text-white mt-auto">
-          <div className="max-w-6xl mx-auto px-4 py-6 text-center text-sm">
-            © {new Date().getFullYear()} BioIng — Todos os direitos reservados.
-          </div>
-        </footer>
+        <SiteFooter />
       </div>
+      <OfferPopup />
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
+  );
+}
+
+function SiteFooter() {
+  const { data } = useConfigLoja();
+  const linhas = [
+    data?.rodape_texto,
+    data?.rodape_cnpj ? `CNPJ: ${data.rodape_cnpj}` : null,
+    data?.rodape_endereco,
+    [data?.rodape_telefone, data?.rodape_email].filter(Boolean).join(" · ") || null,
+  ].filter(Boolean);
+
+  return (
+    <footer className="bg-header text-white mt-auto">
+      <div className="max-w-6xl mx-auto px-4 py-6 text-center text-sm space-y-1">
+        {linhas.length > 0 ? (
+          linhas.map((l, i) => <p key={i} className={i === 0 ? "font-semibold" : "opacity-90"}>{l}</p>)
+        ) : (
+          <p>© {new Date().getFullYear()} — Todos os direitos reservados.</p>
+        )}
+        {linhas.length > 0 && (
+          <p className="opacity-70 pt-2">© {new Date().getFullYear()} — Todos os direitos reservados.</p>
+        )}
+      </div>
+    </footer>
   );
 }
 
