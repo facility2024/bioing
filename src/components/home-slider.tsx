@@ -24,6 +24,12 @@ export function HomeSlider() {
 
   const [idx, setIdx] = useState(0);
 
+  // Reset para o primeiro slide sempre que a lista/ordem mudar
+  const orderKey = (slides ?? []).map((s) => s.id).join("|");
+  useEffect(() => {
+    setIdx(0);
+  }, [orderKey]);
+
   useEffect(() => {
     if (!slides || slides.length <= 1) return;
     const secs = Math.max(1, Number(slides[idx]?.intervalo_segundos) || 5);
