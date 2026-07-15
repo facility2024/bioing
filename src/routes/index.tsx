@@ -15,9 +15,9 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Loja — BioIng" },
-      { name: "description", content: "Confira nossos produtos e faça seu pedido." },
+      { name: "description", content: "Essência Aroma Em Pó Sabor Queijo Parmesão Intenso" },
       { property: "og:title", content: "Loja — BioIng" },
-      { property: "og:description", content: "Confira nossos produtos e faça seu pedido." },
+      { property: "og:description", content: "Essência Aroma Em Pó Sabor Queijo Parmesão Intenso" },
     ],
   }),
   component: () => (
