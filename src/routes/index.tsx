@@ -142,7 +142,18 @@ function Storefront() {
         )}
 
         {pageItems.length > 0 && (
-          <>
+          <div className="relative">
+            {totalPages > 1 && (
+              <button
+                onClick={() => setPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                aria-label="Página anterior"
+                className="hidden md:flex absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 z-10 h-12 w-12 items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-lg ring-1 ring-black/5 hover:bg-white hover:scale-105 disabled:opacity-0 disabled:pointer-events-none transition-all"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {pageItems.map((p) => (
                 <ProductCard key={p.id} produto={p} onOpen={() => openProduct(p)} />
@@ -150,16 +161,49 @@ function Storefront() {
             </div>
 
             {totalPages > 1 && (
-              <Pagination
-                current={currentPage}
-                total={totalPages}
-                onChange={(n) => {
-                  setPage(n);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              />
+              <button
+                onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                aria-label="Próxima página"
+                className="hidden md:flex absolute -right-4 lg:-right-6 top-1/2 -translate-y-1/2 z-10 h-12 w-12 items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-lg ring-1 ring-black/5 hover:bg-white hover:scale-105 disabled:opacity-0 disabled:pointer-events-none transition-all"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
             )}
-          </>
+
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  aria-label="Anterior"
+                  className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-full border bg-background hover:bg-muted disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <div className="flex items-center gap-1.5">
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setPage(i + 1)}
+                      aria-label={`Página ${i + 1}`}
+                      className={`h-2 rounded-full transition-all ${
+                        i + 1 === currentPage ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  aria-label="Próxima"
+                  className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-full border bg-background hover:bg-muted disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </main>
 
