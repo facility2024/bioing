@@ -24,20 +24,25 @@ export function HomeSlider() {
 
   const [idx, setIdx] = useState(0);
 
+  const [broken, setBroken] = useState<Set<string>>(new Set());
+
+  // Filtra slides com imagem quebrada (evita frame em branco no mobile)
+  const validSlides = (slides ?? []).filter((s) => !broken.has(s.id));
+
   // Reset para o primeiro slide sempre que a lista/ordem mudar
-  const orderKey = (slides ?? []).map((s) => s.id).join("|");
+  const orderKey = validSlides.map((s) => s.id).join("|");
   useEffect(() => {
     setIdx(0);
   }, [orderKey]);
 
   useEffect(() => {
-    if (!slides || slides.length <= 1) return;
-    const secs = Math.max(1, Number(slides[idx]?.intervalo_segundos) || 5);
-    const t = setTimeout(() => setIdx((i) => (i + 1) % slides.length), secs * 1000);
+    if (validSlides.length <= 1) return;
+    const secs = Math.max(1, Number(validSlides[idx]?.intervalo_segundos) || 5);
+    const t = setTimeout(() => setIdx((i) => (i + 1) % validSlides.length), secs * 1000);
     return () => clearTimeout(t);
-  }, [slides, idx]);
+  }, [validSlides, idx]);
 
-  if (!slides || slides.length === 0) return null;
+  if (validSlides.length === 0) return null;
 
   return (
     <div
