@@ -18,6 +18,7 @@ import { Route as AuthenticatedAdminSlidesRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminProdutosRouteImport } from './routes/_authenticated/admin/produtos'
 import { Route as AuthenticatedAdminPedidosRouteImport } from './routes/_authenticated/admin/pedidos'
 import { Route as AuthenticatedAdminOfertasRouteImport } from './routes/_authenticated/admin/ofertas'
+import { Route as AuthenticatedAdminExtratoRouteImport } from './routes/_authenticated/admin/extrato'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 import { Route as AuthenticatedAdminConfiguracoesWhatsappRouteImport } from './routes/_authenticated/admin/configuracoes-whatsapp'
 import { Route as AuthenticatedAdminConfiguracoesLojaRouteImport } from './routes/_authenticated/admin/configuracoes-loja'
@@ -74,6 +75,12 @@ const AuthenticatedAdminOfertasRoute =
     path: '/ofertas',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminExtratoRoute =
+  AuthenticatedAdminExtratoRouteImport.update({
+    id: '/extrato',
+    path: '/extrato',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminDashboardRoute =
   AuthenticatedAdminDashboardRouteImport.update({
     id: '/dashboard',
@@ -127,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/admin/configuracoes-loja': typeof AuthenticatedAdminConfiguracoesLojaRoute
   '/admin/configuracoes-whatsapp': typeof AuthenticatedAdminConfiguracoesWhatsappRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
+  '/admin/extrato': typeof AuthenticatedAdminExtratoRoute
   '/admin/ofertas': typeof AuthenticatedAdminOfertasRoute
   '/admin/pedidos': typeof AuthenticatedAdminPedidosRoute
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
@@ -143,6 +151,7 @@ export interface FileRoutesByTo {
   '/admin/configuracoes-loja': typeof AuthenticatedAdminConfiguracoesLojaRoute
   '/admin/configuracoes-whatsapp': typeof AuthenticatedAdminConfiguracoesWhatsappRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
+  '/admin/extrato': typeof AuthenticatedAdminExtratoRoute
   '/admin/ofertas': typeof AuthenticatedAdminOfertasRoute
   '/admin/pedidos': typeof AuthenticatedAdminPedidosRoute
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
@@ -162,6 +171,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/configuracoes-loja': typeof AuthenticatedAdminConfiguracoesLojaRoute
   '/_authenticated/admin/configuracoes-whatsapp': typeof AuthenticatedAdminConfiguracoesWhatsappRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
+  '/_authenticated/admin/extrato': typeof AuthenticatedAdminExtratoRoute
   '/_authenticated/admin/ofertas': typeof AuthenticatedAdminOfertasRoute
   '/_authenticated/admin/pedidos': typeof AuthenticatedAdminPedidosRoute
   '/_authenticated/admin/produtos': typeof AuthenticatedAdminProdutosRoute
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes-loja'
     | '/admin/configuracoes-whatsapp'
     | '/admin/dashboard'
+    | '/admin/extrato'
     | '/admin/ofertas'
     | '/admin/pedidos'
     | '/admin/produtos'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes-loja'
     | '/admin/configuracoes-whatsapp'
     | '/admin/dashboard'
+    | '/admin/extrato'
     | '/admin/ofertas'
     | '/admin/pedidos'
     | '/admin/produtos'
@@ -215,6 +227,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/configuracoes-loja'
     | '/_authenticated/admin/configuracoes-whatsapp'
     | '/_authenticated/admin/dashboard'
+    | '/_authenticated/admin/extrato'
     | '/_authenticated/admin/ofertas'
     | '/_authenticated/admin/pedidos'
     | '/_authenticated/admin/produtos'
@@ -295,6 +308,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminOfertasRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/extrato': {
+      id: '/_authenticated/admin/extrato'
+      path: '/extrato'
+      fullPath: '/admin/extrato'
+      preLoaderRoute: typeof AuthenticatedAdminExtratoRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/dashboard': {
       id: '/_authenticated/admin/dashboard'
       path: '/dashboard'
@@ -354,6 +374,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminConfiguracoesLojaRoute: typeof AuthenticatedAdminConfiguracoesLojaRoute
   AuthenticatedAdminConfiguracoesWhatsappRoute: typeof AuthenticatedAdminConfiguracoesWhatsappRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
+  AuthenticatedAdminExtratoRoute: typeof AuthenticatedAdminExtratoRoute
   AuthenticatedAdminOfertasRoute: typeof AuthenticatedAdminOfertasRoute
   AuthenticatedAdminPedidosRoute: typeof AuthenticatedAdminPedidosRoute
   AuthenticatedAdminProdutosRoute: typeof AuthenticatedAdminProdutosRoute
@@ -372,6 +393,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminConfiguracoesWhatsappRoute:
       AuthenticatedAdminConfiguracoesWhatsappRoute,
     AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
+    AuthenticatedAdminExtratoRoute: AuthenticatedAdminExtratoRoute,
     AuthenticatedAdminOfertasRoute: AuthenticatedAdminOfertasRoute,
     AuthenticatedAdminPedidosRoute: AuthenticatedAdminPedidosRoute,
     AuthenticatedAdminProdutosRoute: AuthenticatedAdminProdutosRoute,
