@@ -218,6 +218,17 @@ export function ChatWidget() {
                 </div>
               </div>
             ))}
+
+            {typing && (
+              <div className="flex gap-2 justify-start">
+                <img src={AVATAR} alt="" className="h-8 w-8 rounded-full object-cover shrink-0" />
+                <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-3 py-2.5 flex items-center gap-1">
+                  <span className="h-2 w-2 rounded-full bg-gray-400 animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-2 w-2 rounded-full bg-gray-400 animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-2 w-2 rounded-full bg-gray-400 animate-bounce" />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Composer */}
@@ -231,24 +242,26 @@ export function ChatWidget() {
                   handleSend();
                 }
               }}
-              disabled={step === "closed" || step === "finishing"}
+              disabled={step === "closed" || step === "finishing" || typing}
               placeholder={
-                step === "closed"
-                  ? "Chat encerrado"
-                  : step === "ask_name"
-                    ? "Seu nome..."
-                    : step === "ask_whatsapp"
-                      ? "Ex: 11 99999-9999"
-                      : step === "ask_question"
-                        ? "Descreva sua dúvida..."
-                        : "Digite sua mensagem..."
+                typing
+                  ? "Aguarde, está digitando..."
+                  : step === "closed"
+                    ? "Chat encerrado"
+                    : step === "ask_name"
+                      ? "Seu nome..."
+                      : step === "ask_whatsapp"
+                        ? "Ex: 11 99999-9999"
+                        : step === "ask_question"
+                          ? "Descreva sua dúvida..."
+                          : "Digite sua mensagem..."
               }
               className="flex-1 h-10"
             />
             <Button
               size="icon"
               onClick={handleSend}
-              disabled={step === "closed" || step === "finishing" || !input.trim()}
+              disabled={step === "closed" || step === "finishing" || typing || !input.trim()}
               className="bg-header hover:bg-header/90 text-white h-10 w-10"
             >
               <Send className="h-4 w-4" />
