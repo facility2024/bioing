@@ -172,11 +172,8 @@ export function ProductDetailDialog({
                   <span className="text-xl font-bold">{formatBRL(Number(produto.preco) * qty)}</span>
                 </div>
                 <Button onClick={handleAdd} disabled={semEstoque} size="lg">
-                  {semEstoque ? "Esgotado" : "Comprar agora"}
-                </Button>
-                <Button onClick={handleAdd} disabled={semEstoque} size="lg" variant="secondary">
                   <ShoppingCart className="h-4 w-4 mr-2" />
-                  Adicionar ao carrinho
+                  {semEstoque ? "Esgotado" : "Adicionar ao carrinho"}
                 </Button>
               </div>
             </div>
