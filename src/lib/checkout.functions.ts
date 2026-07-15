@@ -40,7 +40,7 @@ function validate(input: unknown): CheckoutInput {
 }
 
 export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => validate(input))
+  .validator((input: unknown) => validate(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
