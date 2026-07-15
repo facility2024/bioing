@@ -71,17 +71,14 @@ export function ProductDetailDialog({
             <div className="p-6 flex flex-col gap-4 bg-white min-h-[320px]">
               <div className="flex-1 flex items-center justify-center">
                 {mainImage ? (
-                  <img
-                    src={mainImage}
-                    alt={produto.nome}
-                    className="max-h-[55vh] w-full object-contain"
-                  />
+                  <MagnifierImage src={mainImage} alt={produto.nome} />
                 ) : (
                   <div className="h-64 w-full grid place-items-center text-muted-foreground">
                     <Package className="h-16 w-16" />
                   </div>
                 )}
               </div>
+
 
               {/* Thumbnails below the image */}
               {gallery.length > 1 && (
