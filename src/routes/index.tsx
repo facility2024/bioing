@@ -12,7 +12,8 @@ import { ProductDetailDialog, type ProdutoDetalhe } from "@/components/product-d
 import { HomeSlider } from "@/components/home-slider";
 import { toast } from "sonner";
 
-const LOGO_URL = "https://http2.mlstatic.com/D_NQ_NP_647118-MLA112443697393_052026-F.jpg";
+import logoAsset from "@/assets/ingredientes-bio-logo.png.asset.json";
+const LOGO_URL = logoAsset.url;
 
 export const Route = createFileRoute("/")({
   head: () => ({
