@@ -304,7 +304,7 @@ function ConfigWhatsappPage() {
               onChange={(e) => setTestMessage(e.target.value)}
             />
           </div>
-          <Button onClick={handleSendTest} disabled={sending || !ativa}>
+          <Button onClick={handleSendTest} disabled={sending}>
             {sending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -312,13 +312,12 @@ function ConfigWhatsappPage() {
             )}
             Enviar mensagem de teste
           </Button>
-          {!ativa && (
-            <p className="text-xs text-muted-foreground">
-              Ative a instância acima e salve antes de enviar mensagens.
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            Usa o Instance ID e o Token preenchidos acima. Não precisa salvar antes de testar.
+          </p>
         </CardContent>
       </Card>
     </div>
   );
+}
 }
