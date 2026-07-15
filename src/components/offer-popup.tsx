@@ -84,7 +84,15 @@ export function OfferPopup() {
               target={oferta.cta_url.startsWith("http") ? "_blank" : undefined}
               rel="noreferrer"
               className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground px-6 py-3 font-semibold hover:opacity-90 transition"
-              onClick={() => setOpen(false)}
+              onClick={(e) => {
+                // navegação interna: dispara um popstate para o app abrir o produto sem recarregar
+                if (!oferta.cta_url!.startsWith("http")) {
+                  e.preventDefault();
+                  window.history.pushState({}, "", oferta.cta_url!);
+                  window.dispatchEvent(new PopStateEvent("popstate"));
+                }
+                setOpen(false);
+              }}
             >
               {oferta.cta_texto || "Aproveitar"}
             </a>

@@ -78,6 +78,25 @@ function Storefront() {
     setOpen(true);
   };
 
+  // Abre produto direto quando vier ?produto=<id> na URL (usado pelo popup de oferta)
+  useEffect(() => {
+    if (!produtos || produtos.length === 0) return;
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get("produto");
+    if (!pid) return;
+    const p = produtos.find((x) => x.id === pid);
+    if (p) {
+      setSelected(p);
+      setOpen(true);
+    }
+    // limpa o param da URL sem recarregar
+    params.delete("produto");
+    const qs = params.toString();
+    const url = window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
+    window.history.replaceState({}, "", url);
+  }, [produtos]);
+
   return (
     <div className="min-h-screen bg-background">
       <StoreHeader busca={busca} setBusca={setBusca} />
