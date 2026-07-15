@@ -117,7 +117,11 @@ export function AdminSidebar() {
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleSignOut} tooltip="Sair">
+            <SidebarMenuButton
+              onClick={handleSignOut}
+              tooltip="Sair"
+              className="transition-all duration-200 hover:translate-x-1 hover:shadow-md hover:shadow-black/10 active:scale-[0.97]"
+            >
               <LogOut className="h-4 w-4" />
               <span>Sair</span>
             </SidebarMenuButton>
