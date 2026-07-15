@@ -52,6 +52,7 @@ function getTitleFromPath(path: string) {
   if (path.includes("/categorias")) return "Categorias";
   if (path.includes("/pedidos")) return "Pedidos";
   if (path.includes("/clientes")) return "Clientes";
+  if (path.includes("/slides")) return "Slides do topo";
   if (path.includes("/configuracoes-loja")) return "Configurações da Loja";
   if (path.includes("/configuracoes-whatsapp")) return "Configurações do WhatsApp";
   if (path.includes("/configuracoes-envio")) return "Configurações de Envio";
