@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,10 +30,13 @@ export const Route = createFileRoute("/")({
   ),
 });
 
+const PAGE_SIZE = 10;
+
 function Storefront() {
   const [selected, setSelected] = useState<ProdutoDetalhe | null>(null);
   const [open, setOpen] = useState(false);
   const [busca, setBusca] = useState("");
+  const [page, setPage] = useState(1);
 
   const { data: produtos, isLoading, error } = useQuery({
     queryKey: ["produtos-loja"],
@@ -59,6 +62,16 @@ function Storefront() {
     );
   }, [produtos, busca]);
 
+  const totalPages = Math.max(1, Math.ceil(filtrados.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = useMemo(
+    () => filtrados.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtrados, currentPage],
+  );
+
+  // reset to page 1 when search changes
+  useEffect(() => setPage(1), [busca]);
+
   const openProduct = (p: ProdutoDetalhe) => {
     setSelected(p);
     setOpen(true);
@@ -72,7 +85,7 @@ function Storefront() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {isLoading && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="rounded-xl border bg-card animate-pulse">
                 <div className="aspect-square bg-muted rounded-t-xl" />
@@ -108,12 +121,25 @@ function Storefront() {
           </div>
         )}
 
-        {filtrados.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filtrados.map((p) => (
-              <ProductCard key={p.id} produto={p} onOpen={() => openProduct(p)} />
-            ))}
-          </div>
+        {pageItems.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {pageItems.map((p) => (
+                <ProductCard key={p.id} produto={p} onOpen={() => openProduct(p)} />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <Pagination
+                current={currentPage}
+                total={totalPages}
+                onChange={(n) => {
+                  setPage(n);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              />
+            )}
+          </>
         )}
       </main>
 
@@ -156,8 +182,8 @@ function StoreHeader({ busca, setBusca }: { busca: string; setBusca: (v: string)
           <HeaderAction
             to="/auth"
             icon={<User className="h-5 w-5" />}
-            title="Boas-vindas!"
-            subtitle="Entrar"
+            title="Boas-vindas"
+            subtitle="Admin"
           />
           <HeaderAction
             onClick={() =>
@@ -202,8 +228,8 @@ function StoreHeader({ busca, setBusca }: { busca: string; setBusca: (v: string)
                 >
                   <User className="h-5 w-5" />
                   <div className="flex flex-col leading-tight">
-                    <span className="text-xs text-muted-foreground">Boas-vindas!</span>
-                    <span className="text-sm font-semibold">Entrar ou cadastrar</span>
+                    <span className="text-xs text-muted-foreground">Boas-vindas</span>
+                    <span className="text-sm font-semibold">Admin — Entrar</span>
                   </div>
                 </Link>
                 <button
@@ -330,5 +356,63 @@ function ProductCard({ produto, onOpen }: { produto: ProdutoDetalhe; onOpen: () 
         </Button>
       </div>
     </div>
+  );
+}
+
+function Pagination({
+  current,
+  total,
+  onChange,
+}: {
+  current: number;
+  total: number;
+  onChange: (n: number) => void;
+}) {
+  const pages: (number | "…")[] = [];
+  const push = (v: number | "…") => pages.push(v);
+  const window = 1;
+  push(1);
+  const start = Math.max(2, current - window);
+  const end = Math.min(total - 1, current + window);
+  if (start > 2) push("…");
+  for (let i = start; i <= end; i++) push(i);
+  if (end < total - 1) push("…");
+  if (total > 1) push(total);
+
+  return (
+    <nav className="mt-8 flex items-center justify-center gap-1 flex-wrap" aria-label="Paginação">
+      <button
+        onClick={() => onChange(Math.max(1, current - 1))}
+        disabled={current === 1}
+        className="h-9 px-3 rounded-md border text-sm hover:bg-muted disabled:opacity-40 disabled:pointer-events-none transition-colors"
+      >
+        Anterior
+      </button>
+      {pages.map((p, i) =>
+        p === "…" ? (
+          <span key={`e-${i}`} className="h-9 w-9 grid place-items-center text-muted-foreground">…</span>
+        ) : (
+          <button
+            key={p}
+            onClick={() => onChange(p)}
+            aria-current={p === current ? "page" : undefined}
+            className={`h-9 min-w-9 px-3 rounded-md border text-sm transition-colors ${
+              p === current
+                ? "bg-primary text-primary-foreground border-primary"
+                : "hover:bg-muted"
+            }`}
+          >
+            {p}
+          </button>
+        ),
+      )}
+      <button
+        onClick={() => onChange(Math.min(total, current + 1))}
+        disabled={current === total}
+        className="h-9 px-3 rounded-md border text-sm hover:bg-muted disabled:opacity-40 disabled:pointer-events-none transition-colors"
+      >
+        Próxima
+      </button>
+    </nav>
   );
 }
