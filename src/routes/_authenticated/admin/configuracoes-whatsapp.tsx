@@ -119,6 +119,45 @@ function ConfigWhatsappPage() {
     }
   };
 
+  const handleSendTest = async () => {
+    if (!instanceId || !apiToken) {
+      toast.error("Informe o Instance ID e o Token da API");
+      return;
+    }
+    const phone = testPhone.replace(/\D/g, "");
+    if (phone.length < 10) {
+      toast.error("Informe um número válido com DDD (ex.: 5511999999999)");
+      return;
+    }
+    if (!testMessage.trim()) {
+      toast.error("Escreva a mensagem de teste");
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch(
+        `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(instanceId)}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiToken}`,
+          },
+          body: JSON.stringify({ phone, message: testMessage, delayMessage: 1 }),
+        },
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.error) {
+        throw new Error(json?.message || json?.error || `HTTP ${res.status}`);
+      }
+      toast.success(`Mensagem enviada para ${phone}`);
+    } catch (e) {
+      toast.error("Falha ao enviar: " + (e as Error).message);
+    } finally {
+      setSending(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
