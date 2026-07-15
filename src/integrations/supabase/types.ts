@@ -73,32 +73,62 @@ export type Database = {
       }
       configuracoes_empresa: {
         Row: {
+          cor_background: string | null
+          cor_botoes: string | null
+          cor_header: string | null
+          cor_primaria: string | null
+          cor_texto_botoes: string | null
           created_at: string
           email_contato: string | null
           endereco_empresa: string | null
           id: string
           logo_url: string | null
           nome_empresa: string | null
+          rodape_cnpj: string | null
+          rodape_email: string | null
+          rodape_endereco: string | null
+          rodape_telefone: string | null
+          rodape_texto: string | null
           updated_at: string
           whatsapp_atendimento: string | null
         }
         Insert: {
+          cor_background?: string | null
+          cor_botoes?: string | null
+          cor_header?: string | null
+          cor_primaria?: string | null
+          cor_texto_botoes?: string | null
           created_at?: string
           email_contato?: string | null
           endereco_empresa?: string | null
           id?: string
           logo_url?: string | null
           nome_empresa?: string | null
+          rodape_cnpj?: string | null
+          rodape_email?: string | null
+          rodape_endereco?: string | null
+          rodape_telefone?: string | null
+          rodape_texto?: string | null
           updated_at?: string
           whatsapp_atendimento?: string | null
         }
         Update: {
+          cor_background?: string | null
+          cor_botoes?: string | null
+          cor_header?: string | null
+          cor_primaria?: string | null
+          cor_texto_botoes?: string | null
           created_at?: string
           email_contato?: string | null
           endereco_empresa?: string | null
           id?: string
           logo_url?: string | null
           nome_empresa?: string | null
+          rodape_cnpj?: string | null
+          rodape_email?: string | null
+          rodape_endereco?: string | null
+          rodape_telefone?: string | null
+          rodape_texto?: string | null
           updated_at?: string
           whatsapp_atendimento?: string | null
         }
@@ -288,6 +318,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      oferta_popup: {
+        Row: {
+          ativo: boolean
+          auto_fechar_segundos: number
+          created_at: string
+          cta_texto: string | null
+          cta_url: string | null
+          descricao: string | null
+          fechar_manualmente: boolean
+          id: string
+          imagem_url: string | null
+          mostrar_logo: boolean
+          titulo: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          auto_fechar_segundos?: number
+          created_at?: string
+          cta_texto?: string | null
+          cta_url?: string | null
+          descricao?: string | null
+          fechar_manualmente?: boolean
+          id?: string
+          imagem_url?: string | null
+          mostrar_logo?: boolean
+          titulo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          auto_fechar_segundos?: number
+          created_at?: string
+          cta_texto?: string | null
+          cta_url?: string | null
+          descricao?: string | null
+          fechar_manualmente?: boolean
+          id?: string
+          imagem_url?: string | null
+          mostrar_logo?: boolean
+          titulo?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       pedidos: {
         Row: {
