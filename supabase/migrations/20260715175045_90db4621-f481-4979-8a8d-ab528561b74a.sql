@@ -1,0 +1,1 @@
+ALTER TABLE public.home_slides ADD COLUMN IF NOT EXISTS intervalo_segundos integer NOT NULL DEFAULT 5;
