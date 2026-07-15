@@ -158,7 +158,7 @@ export function ChatWidget() {
         <button
           onClick={openChat}
           aria-label="Abrir chat"
-          className="fixed bottom-4 right-4 z-40 h-14 w-14 rounded-full bg-header shadow-lg hover:scale-105 transition-transform flex items-center justify-center overflow-hidden ring-2 ring-white"
+          className="fixed bottom-4 right-4 z-40 h-14 w-14 rounded-full bg-header shadow-lg hover:scale-105 transition-transform flex items-center justify-center overflow-hidden border border-black/80"
         >
           <img src={AVATAR} alt="Ingredientes Bio" className="h-14 w-14 object-cover" />
           <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-emerald-500 ring-2 ring-white animate-pulse" />
