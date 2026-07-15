@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,17 +71,14 @@ export function ProductDetailDialog({
             <div className="p-6 flex flex-col gap-4 bg-white min-h-[320px]">
               <div className="flex-1 flex items-center justify-center">
                 {mainImage ? (
-                  <img
-                    src={mainImage}
-                    alt={produto.nome}
-                    className="max-h-[55vh] w-full object-contain"
-                  />
+                  <MagnifierImage src={mainImage} alt={produto.nome} />
                 ) : (
                   <div className="h-64 w-full grid place-items-center text-muted-foreground">
                     <Package className="h-16 w-16" />
                   </div>
                 )}
               </div>
+
 
               {/* Thumbnails below the image */}
               {gallery.length > 1 && (
@@ -213,3 +210,72 @@ export function ProductDetailDialog({
     </>
   );
 }
+
+function MagnifierImage({ src, alt }: { src: string; alt: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [show, setShow] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [natural, setNatural] = useState({ w: 0, h: 0 });
+  const LENS = 160;
+  const ZOOM = 2.5;
+
+  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setPos({ x, y });
+  };
+
+  return (
+    <div
+      ref={ref}
+      className="relative w-full max-h-[55vh] flex items-center justify-center cursor-zoom-in select-none"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+      onMouseMove={handleMove}
+    >
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        onLoad={(e) => {
+          const t = e.currentTarget;
+          setNatural({ w: t.naturalWidth, h: t.naturalHeight });
+        }}
+        className="max-h-[55vh] w-full object-contain pointer-events-none"
+        draggable={false}
+      />
+      {show && imgRef.current && natural.w > 0 && (() => {
+        const imgEl = imgRef.current;
+        const contRect = ref.current!.getBoundingClientRect();
+        const imgRect = imgEl.getBoundingClientRect();
+        const relX = pos.x - (imgRect.left - contRect.left);
+        const relY = pos.y - (imgRect.top - contRect.top);
+        if (relX < 0 || relY < 0 || relX > imgRect.width || relY > imgRect.height) return null;
+        const bgW = imgRect.width * ZOOM;
+        const bgH = imgRect.height * ZOOM;
+        const bgX = -(relX * ZOOM - LENS / 2);
+        const bgY = -(relY * ZOOM - LENS / 2);
+        return (
+          <div
+            className="pointer-events-none absolute rounded-full border-2 border-primary shadow-xl overflow-hidden bg-white"
+            style={{
+              width: LENS,
+              height: LENS,
+              left: pos.x - LENS / 2,
+              top: pos.y - LENS / 2,
+              backgroundImage: `url(${src})`,
+              backgroundRepeat: "no-repeat",
+              backgroundSize: `${bgW}px ${bgH}px`,
+              backgroundPosition: `${bgX}px ${bgY}px`,
+            }}
+          />
+        );
+      })()}
+    </div>
+  );
+}
+
