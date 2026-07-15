@@ -1,0 +1,21 @@
+# Deploy do TanStack Start (SSR + server functions) no Netlify.
+# O preset Nitro "netlify" gera funções serverless automaticamente
+# e escreve o output em `dist/` (estáticos) + `.netlify/functions-internal/`.
+#
+# IMPORTANTE: na UI do Netlify (Site settings -> Build & deploy),
+# DEIXE o campo "Publish directory" VAZIO. O preset preenche via netlify.toml.
+# Se estiver como "dist/client" a build falha com
+# "Deploy directory 'dist/client' does not exist".
+
+[build]
+  command = "bun run build"
+  publish = "dist"
+
+[build.environment]
+  # Faz o Nitro (via @lovable.dev/vite-tanstack-config) alvejar Netlify
+  # em vez do padrão Cloudflare Workers.
+  NITRO_PRESET = "netlify"
+  NODE_VERSION = "20"
+
+# Sem [functions] nem [[redirects]]: o preset Nitro cuida disso
+# gerando .netlify/functions-internal/server e _redirects durante o build.
