@@ -90,9 +90,8 @@ function PedidosAdmin() {
 
   const excluir = async (id: string) => {
     if (!confirm("Excluir este pedido?")) return;
-    await supabase.from("itens_pedido").delete().eq("pedido_id", id);
     const { error } = await supabase.from("pedidos").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error("Apenas administradores podem excluir pedidos.");
     toast.success("Pedido excluído");
     qc.invalidateQueries({ queryKey: ["admin-pedidos"] });
   };
