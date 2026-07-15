@@ -64,11 +64,11 @@ export function ProductDetailDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col">
+        <DialogContent className="w-[95vw] sm:w-full sm:max-w-5xl p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col">
           <DialogTitle className="sr-only">{produto.nome}</DialogTitle>
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_340px] overflow-y-auto">
+          <div className="flex flex-col md:grid md:grid-cols-[1fr_340px] overflow-y-auto">
             {/* Image column */}
-            <div className="p-6 flex flex-col gap-4 bg-white min-h-[320px]">
+            <div className="p-4 md:p-6 flex flex-col gap-4 bg-white min-h-[280px]">
               <div className="flex-1 flex items-center justify-center">
                 {mainImage ? (
                   <MagnifierImage src={mainImage} alt={produto.nome} />
@@ -79,7 +79,6 @@ export function ProductDetailDialog({
                 )}
               </div>
 
-
               {/* Thumbnails below the image */}
               {gallery.length > 1 && (
                 <div className="flex gap-2 flex-wrap justify-center">
@@ -89,7 +88,7 @@ export function ProductDetailDialog({
                       type="button"
                       onMouseEnter={() => setSelected(i)}
                       onClick={() => setSelected(i)}
-                      className={`h-16 w-16 rounded border overflow-hidden bg-white transition ${
+                      className={`h-14 w-14 md:h-16 md:w-16 rounded border overflow-hidden bg-white transition ${
                         selected === i
                           ? "border-primary ring-2 ring-primary/30"
                           : "border-border hover:border-primary/60"
@@ -115,17 +114,17 @@ export function ProductDetailDialog({
             </div>
 
             {/* Info column */}
-            <div className="p-6 border-l flex flex-col gap-4">
+            <div className="p-4 md:p-6 border-t md:border-t-0 md:border-l flex flex-col gap-4">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>Novo</span>
                 <span>·</span>
                 <span>Disponível</span>
               </div>
 
-              <h2 className="text-xl font-semibold leading-tight">{produto.nome}</h2>
+              <h2 className="text-lg md:text-xl font-semibold leading-tight break-words">{produto.nome}</h2>
 
               <div className="space-y-1">
-                <p className="text-3xl font-semibold">{formatBRL(Number(produto.preco))}</p>
+                <p className="text-2xl md:text-3xl font-semibold">{formatBRL(Number(produto.preco))}</p>
                 <p className="text-xs text-primary">
                   3x de {formatBRL(Number(produto.preco) / 3)} sem juros
                 </p>
@@ -190,7 +189,6 @@ export function ProductDetailDialog({
                   Adicionar ao carrinho
                 </Button>
               </div>
-
             </div>
           </div>
         </DialogContent>
