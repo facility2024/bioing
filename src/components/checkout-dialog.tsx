@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, MessageCircle, Send } from "lucide-react";
+import { Loader2, CheckCircle2, MessageCircle, Send, FileText } from "lucide-react";
 import { useCart, formatBRL } from "@/hooks/use-cart";
 import { finalizarPedidoWhatsapp } from "@/lib/checkout.functions";
 import { toast } from "sonner";
@@ -29,6 +29,8 @@ export function CheckoutDialog({
   const [obs, setObs] = useState("");
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [pedidoNumero, setPedidoNumero] = useState<string | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const reset = () => {
     setNome("");
@@ -39,6 +41,8 @@ export function CheckoutDialog({
     setCep("");
     setObs("");
     setSuccess(false);
+    setPedidoNumero(null);
+    setPdfUrl(null);
   };
 
   const handleClose = (v: boolean) => {
@@ -55,7 +59,7 @@ export function CheckoutDialog({
     if (telefone.replace(/\D/g, "").length < 10) return toast.error("Telefone inválido (com DDD)");
     setSending(true);
     try {
-      await finalizar({
+      const result = await finalizar({
         data: {
           cliente: {
             nome: nome.trim(),
@@ -70,6 +74,8 @@ export function CheckoutDialog({
           total,
         },
       });
+      setPedidoNumero(result.numero ?? null);
+      setPdfUrl(result.pdfUrl ?? null);
       setSuccess(true);
     } catch (err) {
       toast.error("Erro ao enviar pedido: " + (err as Error).message);
@@ -89,10 +95,18 @@ export function CheckoutDialog({
             <DialogHeader>
               <DialogTitle className="text-center">Pedido enviado! 🎉</DialogTitle>
               <DialogDescription className="text-center">
-                Seu pedido foi encaminhado para o WhatsApp do nosso atendimento e uma confirmação
-                também foi enviada para o seu WhatsApp <strong>agora mesmo</strong>.
+                Seu pedido {pedidoNumero ? <strong>{pedidoNumero}</strong> : null} foi registrado com sucesso.
+                {pdfUrl ? " O PDF está disponível no link abaixo e também vai junto na mensagem do pedido." : ""}
               </DialogDescription>
             </DialogHeader>
+            {pdfUrl ? (
+              <Button asChild className="w-full bg-header text-white hover:bg-header/90">
+                <a href={pdfUrl} target="_blank" rel="noreferrer">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Abrir PDF do pedido
+                </a>
+              </Button>
+            ) : null}
             <div className="rounded-lg border bg-muted/40 p-4 text-left text-sm space-y-2">
               <div className="flex items-center gap-2 font-medium">
                 <MessageCircle className="h-4 w-4 text-emerald-600" />
