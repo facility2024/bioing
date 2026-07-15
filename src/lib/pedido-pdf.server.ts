@@ -1,4 +1,3 @@
-import { PDFDocument, StandardFonts, rgb, PDFFont, PDFPage } from "pdf-lib";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 type Item = { nome: string; preco: number; quantidade: number };
@@ -31,6 +30,8 @@ export type PedidoPdfInput = {
 
 const BUCKET = "pedidos-pdf";
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 dias
+type PdfPageLike = any;
+type PdfFontLike = any;
 
 function formatBRL(n: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
@@ -46,14 +47,14 @@ function hexToRgb(hex?: string | null): { r: number; g: number; b: number } {
 }
 
 function drawWrapped(
-  page: PDFPage,
+  page: PdfPageLike,
   text: string,
   x: number,
   y: number,
   maxWidth: number,
-  font: PDFFont,
+  font: PdfFontLike,
   size: number,
-  color = rgb(1, 1, 1),
+  color: any,
   lineHeight = 1.25,
 ): number {
   const words = text.split(/\s+/);
@@ -101,6 +102,44 @@ export async function gerarESalvarPedidoPdf(input: PedidoPdfInput): Promise<stri
     .maybeSingle();
 
   const config = (cfg || {}) as ConfigEmpresa;
+
+  let bytes: Uint8Array;
+  try {
+    bytes = await gerarPdfComPdfLib(input, config);
+  } catch (e) {
+    console.error("[pedido-pdf] pdf-lib falhou, usando PDF simples:", e);
+    bytes = gerarPdfSimples(input, config);
+  }
+
+  const path = `${input.numero}.pdf`;
+
+  const { error: upErr } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .upload(path, bytes, {
+      contentType: "application/pdf",
+      upsert: true,
+    });
+  if (upErr) {
+    console.error("[pedido-pdf] upload falhou:", upErr);
+    return null;
+  }
+
+  const { data: publicData } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
+  if (publicData?.publicUrl) return publicData.publicUrl;
+
+  const { data: signed, error: signErr } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+  if (signErr || !signed?.signedUrl) {
+    console.error("[pedido-pdf] signed url falhou:", signErr);
+    return null;
+  }
+
+  return signed.signedUrl;
+}
+
+async function gerarPdfComPdfLib(input: PedidoPdfInput, config: ConfigEmpresa): Promise<Uint8Array> {
+  const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
   const headerColor = hexToRgb(config.cor_header);
 
   const pdf = await PDFDocument.create();
@@ -324,28 +363,93 @@ export async function gerarESalvarPedidoPdf(input: PedidoPdfInput): Promise<stri
     fy -= 2;
   }
 
-  // ============ UPLOAD + SIGNED URL ============
-  const bytes = await pdf.save();
-  const path = `${input.numero}.pdf`;
+  return pdf.save();
+}
 
-  const { error: upErr } = await supabaseAdmin.storage
-    .from(BUCKET)
-    .upload(path, bytes, {
-      contentType: "application/pdf",
-      upsert: true,
-    });
-  if (upErr) {
-    console.error("[pedido-pdf] upload falhou:", upErr);
-    return null;
+function sanitizePdfText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[•✅👋🚀📄🛒👤📱✉️📍📝💰]/g, "")
+    .replace(/[^\x20-\x7E]/g, " ")
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)");
+}
+
+function gerarPdfSimples(input: PedidoPdfInput, config: ConfigEmpresa): Uint8Array {
+  const header = hexToRgb(config.cor_header);
+  const rgbFill = `${header.r.toFixed(3)} ${header.g.toFixed(3)} ${header.b.toFixed(3)} rg`;
+  const lines: string[] = [];
+  const add = (text = "") => lines.push(sanitizePdfText(text));
+
+  add(config.nome_empresa || "Ingredientes Bio");
+  add(`COMPROVANTE DE PEDIDO - ${input.numero}`);
+  add(new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }));
+  add("");
+  add("DADOS DO CLIENTE");
+  add(`Nome: ${input.cliente.nome}`);
+  add(`Telefone: ${input.cliente.telefone}`);
+  if (input.cliente.email) add(`E-mail: ${input.cliente.email}`);
+  const endereco = [input.cliente.endereco, input.cliente.cidade, input.cliente.cep].filter(Boolean).join(" - ");
+  if (endereco) add(`Endereco: ${endereco}`);
+  if (input.cliente.observacoes) add(`Observacoes: ${input.cliente.observacoes}`);
+  add("");
+  add("ITENS DO PEDIDO");
+  for (const item of input.itens.slice(0, 26)) {
+    add(`${item.quantidade}x ${item.nome} - ${formatBRL(item.preco * item.quantidade)}`);
   }
+  if (input.itens.length > 26) add(`... e mais ${input.itens.length - 26} item(ns)`);
+  add("");
+  add(`TOTAL DO PEDIDO: ${formatBRL(input.total)}`);
 
-  const { data: signed, error: signErr } = await supabaseAdmin.storage
-    .from(BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-  if (signErr || !signed?.signedUrl) {
-    console.error("[pedido-pdf] signed url falhou:", signErr);
-    return null;
+  const contentLines = [
+    "q",
+    rgbFill,
+    "0 732 595 110 re f",
+    "0 0 595 85 re f",
+    "Q",
+    "BT /F1 18 Tf 40 790 Td 1 1 1 rg (" + sanitizePdfText(config.nome_empresa || "Ingredientes Bio") + ") Tj ET",
+    "BT /F1 12 Tf 380 790 Td 1 1 1 rg (" + sanitizePdfText(input.numero) + ") Tj ET",
+  ];
+
+  let y = 700;
+  lines.forEach((line, index) => {
+    const size = index === 0 ? 14 : line === "DADOS DO CLIENTE" || line === "ITENS DO PEDIDO" ? 12 : 10;
+    const color = line === "" ? "0 0 0 rg" : "0.12 0.12 0.12 rg";
+    if (line) contentLines.push(`BT /F1 ${size} Tf 40 ${y} Td ${color} (${line}) Tj ET`);
+    y -= line === "" ? 12 : 17;
+  });
+
+  const footer = [
+    config.rodape_texto || config.nome_empresa || "Ingredientes Bio",
+    config.rodape_cnpj ? `CNPJ: ${config.rodape_cnpj}` : "",
+    config.rodape_endereco || "",
+    [config.rodape_telefone, config.rodape_email].filter(Boolean).join(" - "),
+  ].filter(Boolean);
+  footer.forEach((line, index) => {
+    contentLines.push(`BT /F1 ${index === 0 ? 10 : 8} Tf 40 ${58 - index * 14} Td 1 1 1 rg (${sanitizePdfText(line)}) Tj ET`);
+  });
+
+  const stream = contentLines.join("\n");
+  const objects = [
+    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n",
+    "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n",
+    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj\n",
+    "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n",
+    `5 0 obj << /Length ${stream.length} >> stream\n${stream}\nendstream endobj\n`,
+  ];
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  for (const obj of objects) {
+    offsets.push(pdf.length);
+    pdf += obj;
   }
+  const xrefAt = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i <= objects.length; i++) pdf += `${String(offsets[i]).padStart(10, "0")} 00000 n \n`;
+  pdf += `trailer << /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefAt}\n%%EOF`;
 
-  return signed.signedUrl;
+  return new TextEncoder().encode(pdf);
 }
