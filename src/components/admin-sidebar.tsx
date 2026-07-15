@@ -23,6 +23,7 @@ const mainItems = [
   { title: "Categorias", url: "/admin/categorias", icon: Tags },
   { title: "Pedidos", url: "/admin/pedidos", icon: ShoppingCart },
   { title: "Clientes", url: "/admin/clientes", icon: Users },
+  { title: "Extrato", url: "/admin/extrato", icon: FileBarChart2 },
   { title: "Slides do topo", url: "/admin/slides", icon: Images },
   { title: "Oferta popup", url: "/admin/ofertas", icon: Megaphone },
 ];
