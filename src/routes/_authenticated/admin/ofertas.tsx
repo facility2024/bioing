@@ -184,6 +184,93 @@ function OfertasAdmin() {
               <p className="text-[11px] text-muted-foreground">0 = não fechar automaticamente</p>
             </div>
           </div>
+          <div className="space-y-1.5">
+            <Label>Produto vinculado ao botão</Label>
+            {produtoSelecionado ? (
+              <div className="flex items-center gap-3 rounded-md border p-2">
+                {produtoSelecionado.imagem_url && (
+                  <img src={produtoSelecionado.imagem_url} alt="" className="h-10 w-10 rounded object-cover border" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{produtoSelecionado.nome}</p>
+                  <p className="text-xs text-muted-foreground truncate">{form.cta_url}</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    set("cta_url", "");
+                    setBuscaProduto("");
+                    setShowBusca(false);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-8"
+                    placeholder="Digite o nome do produto em oferta..."
+                    value={buscaProduto}
+                    onChange={(e) => {
+                      setBuscaProduto(e.target.value);
+                      setShowBusca(true);
+                    }}
+                    onFocus={() => setShowBusca(true)}
+                  />
+                </div>
+                {showBusca && resultadosBusca.length > 0 && (
+                  <ul className="absolute z-10 mt-1 w-full max-h-64 overflow-auto rounded-md border bg-popover shadow-md">
+                    {resultadosBusca.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          className="w-full flex items-center gap-2 p-2 text-left hover:bg-muted"
+                          onClick={() => {
+                            set("cta_url", `/?produto=${p.id}`);
+                            setBuscaProduto("");
+                            setShowBusca(false);
+                          }}
+                        >
+                          {p.imagem_url && (
+                            <img src={p.imagem_url} alt="" className="h-8 w-8 rounded object-cover border" />
+                          )}
+                          <span className="text-sm truncate">{p.nome}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {showBusca && buscaProduto.trim() && resultadosBusca.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">Nenhum produto encontrado.</p>
+                )}
+              </div>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              Ao clicar no botão da oferta, o cliente será levado direto à página do produto.
+              Deixe em branco para usar um link personalizado abaixo.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Texto do botão (CTA)</Label>
+              <Input value={form.cta_texto} onChange={(e) => set("cta_texto", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Link personalizado (opcional)</Label>
+              <Input
+                value={form.cta_url}
+                onChange={(e) => set("cta_url", e.target.value)}
+                placeholder="/ ou https://..."
+                disabled={!!produtoSelecionado}
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
