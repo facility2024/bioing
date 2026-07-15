@@ -173,7 +173,7 @@ export function CheckoutDialog({
                 <span className="text-lg font-bold">{formatBRL(total)}</span>
               </div>
 
-              <Button type="submit" size="lg" className="w-full" disabled={sending || items.length === 0}>
+              <Button type="submit" size="lg" className="w-full bg-header text-white hover:bg-header/90" disabled={sending || items.length === 0}>
                 {sending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
