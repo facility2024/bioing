@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { Search, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/ofertas")({
   component: OfertasAdmin,
@@ -39,10 +40,43 @@ const empty: Oferta = {
   fechar_manualmente: true,
 };
 
+type ProdutoLite = { id: string; nome: string; imagem_url: string | null };
+
 function OfertasAdmin() {
   const qc = useQueryClient();
   const [form, setForm] = useState<Oferta>(empty);
   const [saving, setSaving] = useState(false);
+  const [buscaProduto, setBuscaProduto] = useState("");
+  const [showBusca, setShowBusca] = useState(false);
+
+  const { data: produtos } = useQuery({
+    queryKey: ["admin-ofertas-produtos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("produtos")
+        .select("id, nome, imagem_url")
+        .eq("ativo", true)
+        .order("nome", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as ProdutoLite[];
+    },
+  });
+
+  const produtoSelecionadoId = useMemo(() => {
+    const m = /[?&]produto=([^&]+)/.exec(form.cta_url || "");
+    return m ? decodeURIComponent(m[1]) : null;
+  }, [form.cta_url]);
+
+  const produtoSelecionado = useMemo(
+    () => produtos?.find((p) => p.id === produtoSelecionadoId) ?? null,
+    [produtos, produtoSelecionadoId],
+  );
+
+  const resultadosBusca = useMemo(() => {
+    const q = buscaProduto.trim().toLowerCase();
+    if (!q || !produtos) return [];
+    return produtos.filter((p) => p.nome.toLowerCase().includes(q)).slice(0, 8);
+  }, [buscaProduto, produtos]);
 
   const { data } = useQuery({
     queryKey: ["admin-oferta-popup"],
@@ -116,16 +150,6 @@ function OfertasAdmin() {
             <Input value={form.imagem_url} onChange={(e) => set("imagem_url", e.target.value)} placeholder="https://..." />
             {form.imagem_url && <img src={form.imagem_url} alt="" className="mt-2 h-32 w-full object-cover rounded border" />}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Texto do botão (CTA)</Label>
-              <Input value={form.cta_texto} onChange={(e) => set("cta_texto", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Link do botão</Label>
-              <Input value={form.cta_url} onChange={(e) => set("cta_url", e.target.value)} placeholder="/ ou https://..." />
-            </div>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="flex items-center justify-between rounded-md border p-3">
               <div>
@@ -148,6 +172,93 @@ function OfertasAdmin() {
                 onChange={(e) => set("auto_fechar_segundos", Number(e.target.value))}
               />
               <p className="text-[11px] text-muted-foreground">0 = não fechar automaticamente</p>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Produto vinculado ao botão</Label>
+            {produtoSelecionado ? (
+              <div className="flex items-center gap-3 rounded-md border p-2">
+                {produtoSelecionado.imagem_url && (
+                  <img src={produtoSelecionado.imagem_url} alt="" className="h-10 w-10 rounded object-cover border" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{produtoSelecionado.nome}</p>
+                  <p className="text-xs text-muted-foreground truncate">{form.cta_url}</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    set("cta_url", "");
+                    setBuscaProduto("");
+                    setShowBusca(false);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-8"
+                    placeholder="Digite o nome do produto em oferta..."
+                    value={buscaProduto}
+                    onChange={(e) => {
+                      setBuscaProduto(e.target.value);
+                      setShowBusca(true);
+                    }}
+                    onFocus={() => setShowBusca(true)}
+                  />
+                </div>
+                {showBusca && resultadosBusca.length > 0 && (
+                  <ul className="absolute z-10 mt-1 w-full max-h-64 overflow-auto rounded-md border bg-popover shadow-md">
+                    {resultadosBusca.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          className="w-full flex items-center gap-2 p-2 text-left hover:bg-muted"
+                          onClick={() => {
+                            set("cta_url", `/?produto=${p.id}`);
+                            setBuscaProduto("");
+                            setShowBusca(false);
+                          }}
+                        >
+                          {p.imagem_url && (
+                            <img src={p.imagem_url} alt="" className="h-8 w-8 rounded object-cover border" />
+                          )}
+                          <span className="text-sm truncate">{p.nome}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {showBusca && buscaProduto.trim() && resultadosBusca.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">Nenhum produto encontrado.</p>
+                )}
+              </div>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              Ao clicar no botão da oferta, o cliente será levado direto à página do produto.
+              Deixe em branco para usar um link personalizado abaixo.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Texto do botão (CTA)</Label>
+              <Input value={form.cta_texto} onChange={(e) => set("cta_texto", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Link personalizado (opcional)</Label>
+              <Input
+                value={form.cta_url}
+                onChange={(e) => set("cta_url", e.target.value)}
+                placeholder="/ ou https://..."
+                disabled={!!produtoSelecionado}
+              />
             </div>
           </div>
         </CardContent>
