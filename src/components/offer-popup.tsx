@@ -53,17 +53,22 @@ export function OfferPopup() {
   if (!oferta || !open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="relative w-full max-w-md rounded-2xl bg-card shadow-2xl overflow-hidden animate-scale-in">
-        {oferta.fechar_manualmente && (
-          <button
-            onClick={() => setOpen(false)}
-            aria-label="Fechar"
-            className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-black/50 text-white grid place-items-center hover:bg-black/70 transition"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in"
+      onClick={() => setOpen(false)}
+    >
+      <div
+        className="relative w-full max-w-md rounded-2xl bg-card shadow-2xl overflow-hidden animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Fechar"
+          className="absolute top-3 right-3 z-20 h-9 w-9 rounded-full bg-black/60 text-white grid place-items-center hover:bg-black/80 transition cursor-pointer"
+        >
+          <X className="h-5 w-5" />
+        </button>
 
         {oferta.mostrar_logo && config?.logo_url && (
           <div className="flex justify-center pt-5 pb-2 bg-card">

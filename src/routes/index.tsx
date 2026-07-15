@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,15 +63,32 @@ function Storefront() {
     );
   }, [produtos, busca]);
 
-  const totalPages = Math.max(1, Math.ceil(filtrados.length / PAGE_SIZE));
+  const pages = useMemo(() => {
+    const result: ProdutoDetalhe[][] = [];
+    for (let i = 0; i < filtrados.length; i += PAGE_SIZE) {
+      result.push(filtrados.slice(i, i + PAGE_SIZE));
+    }
+    return result;
+  }, [filtrados]);
+  const totalPages = Math.max(1, pages.length);
   const currentPage = Math.min(page, totalPages);
-  const pageItems = useMemo(
-    () => filtrados.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
-    [filtrados, currentPage],
-  );
+
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+  const goTo = (n: number) => {
+    const clamped = Math.min(Math.max(1, n), totalPages);
+    setPage(clamped);
+    const el = scrollerRef.current;
+    if (el) {
+      el.scrollTo({ left: (clamped - 1) * el.clientWidth, behavior: "smooth" });
+    }
+  };
 
   // reset to page 1 when search changes
-  useEffect(() => setPage(1), [busca]);
+  useEffect(() => {
+    setPage(1);
+    scrollerRef.current?.scrollTo({ left: 0 });
+  }, [busca]);
 
   const openProduct = (p: ProdutoDetalhe) => {
     setSelected(p);
@@ -141,11 +158,11 @@ function Storefront() {
           </div>
         )}
 
-        {pageItems.length > 0 && (
+        {pages.length > 0 && (
           <div className="relative">
             {totalPages > 1 && (
               <button
-                onClick={() => setPage(Math.max(1, currentPage - 1))}
+                onClick={() => goTo(currentPage - 1)}
                 disabled={currentPage === 1}
                 aria-label="Página anterior"
                 className="hidden md:flex absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 z-10 h-12 w-12 items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-lg ring-1 ring-black/5 hover:bg-white hover:scale-105 disabled:opacity-0 disabled:pointer-events-none transition-all"
@@ -154,15 +171,31 @@ function Storefront() {
               </button>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {pageItems.map((p) => (
-                <ProductCard key={p.id} produto={p} onOpen={() => openProduct(p)} />
+            <div
+              ref={scrollerRef}
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                const idx = Math.round(el.scrollLeft / el.clientWidth) + 1;
+                if (idx !== currentPage) setPage(idx);
+              }}
+              className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth -mx-4 px-4 no-scrollbar"
+              style={{ scrollbarWidth: "none" }}
+            >
+              {pages.map((group, gi) => (
+                <div
+                  key={gi}
+                  className="snap-start shrink-0 w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pr-1"
+                >
+                  {group.map((p) => (
+                    <ProductCard key={p.id} produto={p} onOpen={() => openProduct(p)} />
+                  ))}
+                </div>
               ))}
             </div>
 
             {totalPages > 1 && (
               <button
-                onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+                onClick={() => goTo(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 aria-label="Próxima página"
                 className="hidden md:flex absolute -right-4 lg:-right-6 top-1/2 -translate-y-1/2 z-10 h-12 w-12 items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-lg ring-1 ring-black/5 hover:bg-white hover:scale-105 disabled:opacity-0 disabled:pointer-events-none transition-all"
@@ -174,7 +207,7 @@ function Storefront() {
             {totalPages > 1 && (
               <div className="mt-6 flex items-center justify-center gap-3">
                 <button
-                  onClick={() => setPage(Math.max(1, currentPage - 1))}
+                  onClick={() => goTo(currentPage - 1)}
                   disabled={currentPage === 1}
                   aria-label="Anterior"
                   className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-full border bg-background hover:bg-muted disabled:opacity-40 disabled:pointer-events-none transition-colors"
@@ -185,7 +218,7 @@ function Storefront() {
                   {Array.from({ length: totalPages }).map((_, i) => (
                     <button
                       key={i}
-                      onClick={() => setPage(i + 1)}
+                      onClick={() => goTo(i + 1)}
                       aria-label={`Página ${i + 1}`}
                       className={`h-2 rounded-full transition-all ${
                         i + 1 === currentPage ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
@@ -194,7 +227,7 @@ function Storefront() {
                   ))}
                 </div>
                 <button
-                  onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+                  onClick={() => goTo(currentPage + 1)}
                   disabled={currentPage === totalPages}
                   aria-label="Próxima"
                   className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-full border bg-background hover:bg-muted disabled:opacity-40 disabled:pointer-events-none transition-colors"
