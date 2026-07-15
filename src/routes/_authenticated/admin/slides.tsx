@@ -221,9 +221,3 @@ function SlidesAdmin() {
     </div>
   );
 }
-          </ul>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
