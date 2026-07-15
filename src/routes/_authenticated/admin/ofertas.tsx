@@ -150,16 +150,6 @@ function OfertasAdmin() {
             <Input value={form.imagem_url} onChange={(e) => set("imagem_url", e.target.value)} placeholder="https://..." />
             {form.imagem_url && <img src={form.imagem_url} alt="" className="mt-2 h-32 w-full object-cover rounded border" />}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Texto do botão (CTA)</Label>
-              <Input value={form.cta_texto} onChange={(e) => set("cta_texto", e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Link do botão</Label>
-              <Input value={form.cta_url} onChange={(e) => set("cta_url", e.target.value)} placeholder="/ ou https://..." />
-            </div>
-          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="flex items-center justify-between rounded-md border p-3">
               <div>
