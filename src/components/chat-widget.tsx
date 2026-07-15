@@ -51,6 +51,19 @@ export function ChatWidget() {
     return () => clearTimeout(t);
   }, [open, teaserDismissed]);
 
+  // Esconde o widget quando um Dialog (Radix) estiver aberto
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const check = () => {
+      const hasOpenDialog = !!document.querySelector('[role="dialog"][data-state="open"]');
+      setDialogOpen(hasOpenDialog);
+    };
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-state"] });
+    return () => obs.disconnect();
+  }, []);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, open, typing]);
