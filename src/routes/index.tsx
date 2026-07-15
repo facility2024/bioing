@@ -159,10 +159,10 @@ function StoreHeader({ busca, setBusca }: { busca: string; setBusca: (v: string)
         <Link to="/" className="shrink-0">
           <img
             src={LOGO_URL}
-            alt="Logo"
-            width={64}
-            height={64}
-            className="h-10 w-10 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain rounded-md bg-white p-1"
+            alt="Ingredientes Bio"
+            width={180}
+            height={110}
+            className="h-12 sm:h-14 md:h-16 w-auto object-contain"
           />
         </Link>
 
