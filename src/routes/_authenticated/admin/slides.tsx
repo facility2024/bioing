@@ -104,7 +104,7 @@ function SlidesAdmin() {
           <CardTitle>Adicionar slide</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleAdd} className="grid gap-4 md:grid-cols-[1fr_1fr_auto] items-end">
+          <form onSubmit={handleAdd} className="grid gap-4 md:grid-cols-[1fr_1fr_140px_auto] items-end">
             <div className="space-y-1">
               <Label>URL da imagem</Label>
               <Input
@@ -119,6 +119,15 @@ function SlidesAdmin() {
                 placeholder="https://..."
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Tempo (segundos)</Label>
+              <Input
+                type="number"
+                min={1}
+                value={intervalo}
+                onChange={(e) => setIntervalo(e.target.value)}
               />
             </div>
             <Button type="submit" disabled={saving}>
