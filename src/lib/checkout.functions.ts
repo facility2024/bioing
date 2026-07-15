@@ -44,19 +44,6 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: config, error } = await supabaseAdmin
-      .from("configuracoes_whatsapp")
-      .select("instance_id, api_token, numero_conectado, ativa")
-      .limit(1)
-      .maybeSingle();
-
-    if (error) throw new Error("Erro ao ler configuração do WhatsApp");
-    if (!config?.instance_id || !config?.api_token) {
-      throw new Error("WhatsApp da loja não configurado. Fale com o administrador.");
-    }
-    if (!config.numero_conectado) throw new Error("Número do atendente não configurado");
-
-
     const itensTxt = data.itens
       .map((it) => `• ${it.quantidade}x ${it.nome} — ${formatBRL(it.preco * it.quantidade)}`)
       .join("\n");
@@ -64,6 +51,84 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
     const enderecoTxt = [data.cliente.endereco, data.cliente.cidade, data.cliente.cep]
       .filter(Boolean)
       .join(" - ");
+
+    // ============ 1) PERSISTIR CLIENTE + PEDIDO + ITENS (SEMPRE) ============
+    const telDigits = onlyDigits(data.cliente.telefone);
+    let pedidoNumero: string | null = null;
+
+    try {
+      const { data: existente, error: errBusca } = await supabaseAdmin
+        .from("clientes")
+        .select("id")
+        .eq("whatsapp", telDigits)
+        .maybeSingle();
+      if (errBusca) throw new Error(`Erro ao buscar cliente: ${errBusca.message}`);
+
+      let clienteId = existente?.id as string | undefined;
+      if (clienteId) {
+        const { error: errUp } = await supabaseAdmin
+          .from("clientes")
+          .update({ nome: data.cliente.nome, email: data.cliente.email ?? null })
+          .eq("id", clienteId);
+        if (errUp) throw new Error(`Erro ao atualizar cliente: ${errUp.message}`);
+      } else {
+        const { data: novo, error: errCli } = await supabaseAdmin
+          .from("clientes")
+          .insert({
+            nome: data.cliente.nome,
+            whatsapp: telDigits,
+            email: data.cliente.email ?? null,
+          })
+          .select("id")
+          .single();
+        if (errCli) throw new Error(`Erro ao criar cliente: ${errCli.message}`);
+        clienteId = novo!.id;
+      }
+
+      const observacoes =
+        [
+          enderecoTxt ? `Endereço: ${enderecoTxt}` : null,
+          data.cliente.observacoes ? `Obs: ${data.cliente.observacoes}` : null,
+        ]
+          .filter(Boolean)
+          .join(" | ") || null;
+
+      const { data: pedido, error: errPed } = await supabaseAdmin
+        .from("pedidos")
+        .insert({
+          cliente_id: clienteId!,
+          subtotal: data.total,
+          total: data.total,
+          status: "novo",
+          observacoes,
+        })
+        .select("id, numero")
+        .single();
+      if (errPed) throw new Error(`Erro ao criar pedido: ${errPed.message}`);
+      pedidoNumero = pedido!.numero as string;
+
+      const itensPayload = data.itens.map((it) => ({
+        pedido_id: pedido!.id,
+        produto_nome: it.nome,
+        quantidade: it.quantidade,
+        valor_unitario: it.preco,
+        valor_total: it.preco * it.quantidade,
+      }));
+      const { error: errItens } = await supabaseAdmin.from("itens_pedido").insert(itensPayload);
+      if (errItens) throw new Error(`Erro ao criar itens: ${errItens.message}`);
+    } catch (e) {
+      console.error("[checkout] Falha ao registrar pedido:", e);
+      throw new Error(
+        e instanceof Error ? e.message : "Não foi possível registrar seu pedido. Tente novamente."
+      );
+    }
+
+    // ============ 2) TENTAR ENVIAR WHATSAPP (não bloqueia o pedido) ============
+    const { data: config } = await supabaseAdmin
+      .from("configuracoes_whatsapp")
+      .select("instance_id, api_token, numero_conectado, ativa")
+      .limit(1)
+      .maybeSingle();
 
     const rodapeEmpresa =
       `\n\n━━━━━━━━━━━━━━━\n` +
@@ -73,7 +138,7 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       `✉️ *E-mail:* vendas@biocondobrasil.com.br`;
 
     const mensagemAtendente =
-      `🛒 *Novo pedido recebido!*\n\n` +
+      `🛒 *Novo pedido ${pedidoNumero ?? ""}*\n\n` +
       `👤 *Cliente:* ${data.cliente.nome}\n` +
       `📱 *Telefone:* ${data.cliente.telefone}\n` +
       (data.cliente.email ? `✉️ *E-mail:* ${data.cliente.email}\n` : "") +
@@ -85,103 +150,38 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
 
     const mensagemCliente =
       `Olá *${data.cliente.nome}*! 👋\n\n` +
-      `Recebemos seu pedido com sucesso! ✅\n\n` +
+      `Recebemos seu pedido *${pedidoNumero ?? ""}* com sucesso! ✅\n\n` +
       `*Resumo do pedido:*\n${itensTxt}\n\n` +
       `💰 *Total:* ${formatBRL(data.total)}\n\n` +
-      `Um atendente já está com sua solicitação e vai continuar por aqui mesmo pelo WhatsApp. 🚀\n` +
-      `Fique à vontade, ele já está pronto para te atender!` +
+      `Um atendente já está com sua solicitação e vai continuar por aqui mesmo pelo WhatsApp. 🚀` +
       rodapeEmpresa;
 
-    async function enviar(phone: string, message: string) {
-      const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(config!.instance_id!)}`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${config!.api_token!}`,
-        },
-        body: JSON.stringify({ phone: onlyDigits(phone), message, delayMessage: 1 }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || json?.error) {
-        throw new Error(json?.message || json?.error || `HTTP ${res.status}`);
+    if (config?.instance_id && config?.api_token && config?.numero_conectado) {
+      async function enviar(phone: string, message: string) {
+        const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(config!.instance_id!)}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${config!.api_token!}`,
+          },
+          body: JSON.stringify({ phone: onlyDigits(phone), message, delayMessage: 1 }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || json?.error) {
+          throw new Error(json?.message || json?.error || `HTTP ${res.status}`);
+        }
       }
+      try {
+        await enviar(config.numero_conectado, mensagemAtendente);
+        await enviar(data.cliente.telefone, mensagemCliente);
+      } catch (e) {
+        console.error("[checkout] WhatsApp falhou (pedido já salvo):", e);
+      }
+    } else {
+      console.warn("[checkout] WhatsApp não configurado — pedido salvo sem notificação.");
     }
 
-    // Atendente primeiro, depois cliente
-    await enviar(config.numero_conectado, mensagemAtendente);
-    await enviar(data.cliente.telefone, mensagemCliente);
-
-    // Persistir cliente + pedido + itens
-    try {
-      const telDigits = onlyDigits(data.cliente.telefone);
-
-      // Upsert cliente por whatsapp
-      const { data: existente } = await supabaseAdmin
-        .from("clientes")
-        .select("id")
-        .eq("whatsapp", telDigits)
-        .maybeSingle();
-
-      let clienteId = existente?.id as string | undefined;
-      if (clienteId) {
-        await supabaseAdmin
-          .from("clientes")
-          .update({
-            nome: data.cliente.nome,
-            email: data.cliente.email ?? null,
-          })
-          .eq("id", clienteId);
-      } else {
-        const { data: novo, error: errCli } = await supabaseAdmin
-          .from("clientes")
-          .insert({
-            nome: data.cliente.nome,
-            whatsapp: telDigits,
-            email: data.cliente.email ?? null,
-          })
-          .select("id")
-          .single();
-        if (errCli) throw errCli;
-        clienteId = novo!.id;
-      }
-
-      // Gerar número do pedido
-      const { data: numRow } = await supabaseAdmin.rpc("gerar_numero_pedido");
-      const numero = (numRow as unknown as string) || `PED-${Date.now()}`;
-
-      const observacoes = [
-        enderecoTxt ? `Endereço: ${enderecoTxt}` : null,
-        data.cliente.observacoes ? `Obs: ${data.cliente.observacoes}` : null,
-      ]
-        .filter(Boolean)
-        .join(" | ") || null;
-
-      const { data: pedido, error: errPed } = await supabaseAdmin
-        .from("pedidos")
-        .insert({
-          numero,
-          cliente_id: clienteId!,
-          subtotal: data.total,
-          total: data.total,
-          status: "novo",
-          observacoes,
-        })
-        .select("id")
-        .single();
-      if (errPed) throw errPed;
-
-      const itensPayload = data.itens.map((it) => ({
-        pedido_id: pedido!.id,
-        produto_nome: it.nome,
-        quantidade: it.quantidade,
-        valor_unitario: it.preco,
-        valor_total: it.preco * it.quantidade,
-      }));
-      await supabaseAdmin.from("itens_pedido").insert(itensPayload);
-    } catch (e) {
-      console.error("Erro ao registrar pedido no banco:", e);
-    }
-
-    return { ok: true };
+    return { ok: true, numero: pedidoNumero };
   });
+
