@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, MessageCircle, ExternalLink, PlugZap, Power } from "lucide-react";
+import { Loader2, MessageCircle, ExternalLink, PlugZap, Power, Send } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_authenticated/admin/configuracoes-whatsapp")({
   component: ConfigWhatsappPage,
@@ -46,6 +47,11 @@ function ConfigWhatsappPage() {
   const [ativa, setAtiva] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
+  const [testMessage, setTestMessage] = useState(
+    "🚀 Mensagem de teste da sua loja — a integração com o WhatsApp está funcionando!",
+  );
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (data) {
@@ -110,6 +116,45 @@ function ConfigWhatsappPage() {
       toast.error("Falha ao consultar W-API: " + (e as Error).message);
     } finally {
       setTesting(false);
+    }
+  };
+
+  const handleSendTest = async () => {
+    if (!instanceId || !apiToken) {
+      toast.error("Informe o Instance ID e o Token da API");
+      return;
+    }
+    const phone = testPhone.replace(/\D/g, "");
+    if (phone.length < 10) {
+      toast.error("Informe um número válido com DDD (ex.: 5511999999999)");
+      return;
+    }
+    if (!testMessage.trim()) {
+      toast.error("Escreva a mensagem de teste");
+      return;
+    }
+    setSending(true);
+    try {
+      const res = await fetch(
+        `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(instanceId)}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiToken}`,
+          },
+          body: JSON.stringify({ phone, message: testMessage, delayMessage: 1 }),
+        },
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.error) {
+        throw new Error(json?.message || json?.error || `HTTP ${res.status}`);
+      }
+      toast.success(`Mensagem enviada para ${phone}`);
+    } catch (e) {
+      toast.error("Falha ao enviar: " + (e as Error).message);
+    } finally {
+      setSending(false);
     }
   };
 
@@ -212,6 +257,50 @@ function ConfigWhatsappPage() {
               Testar conexão
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Send className="h-4 w-4" /> Enviar mensagem de teste
+          </CardTitle>
+          <CardDescription>
+            Envie uma mensagem para um número seu para confirmar que a integração está funcionando.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="test-phone">Número de destino (com DDI + DDD)</Label>
+            <Input
+              id="test-phone"
+              placeholder="Ex.: 5511999999999"
+              value={testPhone}
+              onChange={(e) => setTestPhone(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="test-message">Mensagem</Label>
+            <Textarea
+              id="test-message"
+              rows={3}
+              value={testMessage}
+              onChange={(e) => setTestMessage(e.target.value)}
+            />
+          </div>
+          <Button onClick={handleSendTest} disabled={sending || !ativa}>
+            {sending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="mr-2 h-4 w-4" />
+            )}
+            Enviar mensagem de teste
+          </Button>
+          {!ativa && (
+            <p className="text-xs text-muted-foreground">
+              Ative a instância acima e salve antes de enviar mensagens.
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
