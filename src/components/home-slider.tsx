@@ -10,12 +10,16 @@ export function HomeSlider() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_slides")
-        .select("id, imagem_url, link_url, intervalo_segundos")
+        .select("id, imagem_url, link_url, intervalo_segundos, ordem")
         .eq("ativo", true)
         .order("ordem", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as Slide[];
+      const rows = (data ?? []) as (Slide & { ordem: number })[];
+      // Garante ordem correta no cliente (mobile pode receber cache antigo)
+      return [...rows].sort((a, b) => a.ordem - b.ordem) as Slide[];
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const [idx, setIdx] = useState(0);
