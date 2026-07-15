@@ -176,6 +176,10 @@ export function ProductDetailDialog({
               </div>
 
               <div className="flex flex-col gap-2 mt-auto">
+                <div className="flex items-baseline justify-between rounded-lg border bg-muted/40 p-3">
+                  <span className="text-sm text-muted-foreground">Subtotal ({qty} {qty > 1 ? "itens" : "item"})</span>
+                  <span className="text-xl font-bold">{formatBRL(Number(produto.preco) * qty)}</span>
+                </div>
                 <Button onClick={handleAdd} disabled={semEstoque} size="lg">
                   {semEstoque ? "Esgotado" : "Comprar agora"}
                 </Button>
@@ -189,6 +193,7 @@ export function ProductDetailDialog({
                   Adicionar ao carrinho
                 </Button>
               </div>
+
             </div>
           </div>
         </DialogContent>
