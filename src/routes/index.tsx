@@ -51,7 +51,7 @@ function Storefront() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-background sticky top-0 z-20">
+      <header className="border-b bg-header sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col items-center gap-3 relative">
           <div className="absolute right-4 top-1/2 -translate-y-1/2">
             <CartDrawer />
