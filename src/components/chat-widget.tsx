@@ -65,46 +65,42 @@ export function ChatWidget() {
     ? `https://wa.me/${numeroWhatsAtendimento.length === 10 || numeroWhatsAtendimento.length === 11 ? "55" + numeroWhatsAtendimento : numeroWhatsAtendimento}`
     : "https://wa.me/";
 
-  const addBot = (text: string, button?: Msg["button"]) =>
-    setMsgs((m) => [...m, { from: "bot", text, button }]);
   const addUser = (text: string) => setMsgs((m) => [...m, { from: "user", text }]);
 
-  const handleSend = () => {
-    if (step === "closed") return;
+  const handleSend = async () => {
+    if (step === "closed" || typing) return;
     const val = input.trim();
     if (!val) return;
     addUser(val);
     setInput("");
 
     if (step === "greeting") {
-      // qualquer resposta ("sim", "quero", "tenho dúvida"...) leva ao fluxo
       setStep("ask_name");
-      setTimeout(() => {
-        addBot("Que ótimo! Antes de começar, pode me informar o seu nome? 😊");
-      }, 400);
+      await sendBot("Que bom! Fico feliz em ajudar 😊");
+      await sendBot("Antes da gente começar, como posso te chamar? Me conta seu nome, por favor.", undefined, 300);
       return;
     }
 
     if (step === "ask_name") {
       setNome(val);
+      const primeiro = val.split(" ")[0];
       setStep("ask_whatsapp");
-      setTimeout(() => {
-        addBot(
-          `Prazer, ${val.split(" ")[0]}! 🤝 Agora me passa o seu WhatsApp com DDD (ex: 11 99999-9999).`,
-        );
-      }, 400);
+      await sendBot(`Prazer em te conhecer, ${primeiro}! 🤝`);
+      await sendBot("Agora me passa o seu WhatsApp com DDD, tá? (ex: 11 99999-9999)", undefined, 300);
       return;
     }
 
     if (step === "ask_whatsapp") {
       const dig = onlyDigits(val);
       if (dig.length < 10) {
-        setTimeout(() => addBot("Hmm, esse número parece incompleto. Envie com DDD, por favor."), 300);
+        await sendBot("Hmm, acho que faltou algum número aí 🤔");
+        await sendBot("Pode me enviar de novo com o DDD? Assim consigo te ajudar direitinho.", undefined, 200);
         return;
       }
       setWhats(dig);
       setStep("ask_question");
-      setTimeout(() => addBot("Perfeito! ✅ E qual seria a sua dúvida?"), 400);
+      await sendBot("Perfeito, anotei aqui ✅");
+      await sendBot("Agora me conta: qual é a sua dúvida?", undefined, 300);
       return;
     }
 
@@ -115,16 +111,14 @@ export function ChatWidget() {
         `Olá! Meu nome é ${nome}. Tenho uma dúvida: ${val}`,
       );
       const href = `${linkWhats}?text=${msgWhats}`;
-      setTimeout(() => {
-        addBot(
-          `Obrigado pela sua dúvida${nomePrimeiro ? `, ${nomePrimeiro}` : ""}! 🙌 Vou te encaminhar para um atendente. É só clicar no botão abaixo:`,
-          { label: "Falar no WhatsApp", href },
-        );
-      }, 400);
-      setTimeout(() => {
-        addBot("💬 Chat encerrado. Continuaremos o atendimento pelo WhatsApp. Até já!");
-        setStep("closed");
-      }, 1400);
+      await sendBot(`Entendi${nomePrimeiro ? `, ${nomePrimeiro}` : ""}! Obrigado por compartilhar 🙌`);
+      await sendBot(
+        "Vou te encaminhar agora para um dos nossos atendentes. É só clicar no botão aqui embaixo que a conversa continua no WhatsApp 👇",
+        { label: "Falar no WhatsApp", href },
+        400,
+      );
+      await sendBot("💬 Conversa encerrada por aqui. Foi um prazer! Te vejo no WhatsApp 👋", undefined, 600);
+      setStep("closed");
       return;
     }
   };
