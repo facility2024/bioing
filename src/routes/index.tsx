@@ -236,7 +236,7 @@ function ProductCard({ produto, onOpen }: { produto: ProdutoDetalhe; onOpen: () 
   return (
     <div
       onClick={onOpen}
-      className="group cursor-pointer rounded-xl border bg-card overflow-hidden flex flex-col hover:shadow-lg transition-shadow"
+      className="group cursor-pointer rounded-xl border bg-card overflow-hidden flex flex-col hover:shadow-lg transition-shadow laser-bottom"
     >
       <div className="aspect-square bg-white overflow-hidden relative">
         {mainImage ? (

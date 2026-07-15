@@ -146,3 +146,50 @@
     color: var(--color-foreground);
   }
 }
+
+/* Laser scan line at the bottom of product cards */
+@keyframes laser-scan {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.laser-bottom {
+  position: relative;
+}
+.laser-bottom::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(163, 230, 53, 0) 10%,
+    #a3e635 45%,
+    #d9f99d 50%,
+    #a3e635 55%,
+    rgba(163, 230, 53, 0) 90%,
+    transparent 100%
+  );
+  box-shadow: 0 0 8px #a3e635, 0 0 16px rgba(163, 230, 53, 0.6);
+  transform: translateX(-100%);
+  animation: laser-scan 2.8s ease-in-out infinite;
+  pointer-events: none;
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+
