@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, MessageCircle, ExternalLink, PlugZap, Power } from "lucide-react";
+import { Loader2, MessageCircle, ExternalLink, PlugZap, Power, Send } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/_authenticated/admin/configuracoes-whatsapp")({
   component: ConfigWhatsappPage,
@@ -46,6 +47,11 @@ function ConfigWhatsappPage() {
   const [ativa, setAtiva] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
+  const [testMessage, setTestMessage] = useState(
+    "🚀 Mensagem de teste da sua loja — a integração com o WhatsApp está funcionando!",
+  );
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (data) {
