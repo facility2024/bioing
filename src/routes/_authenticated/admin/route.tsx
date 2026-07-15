@@ -3,21 +3,29 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { supabase } from "@/integrations/supabase/client";
 
+const adminCache = new Map<string, boolean>();
+
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
   beforeLoad: async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw redirect({ to: "/auth" });
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData.session?.user;
+    if (!user) throw redirect({ to: "/auth" });
 
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userData.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
+    let isAdmin = adminCache.get(user.id);
+    if (isAdmin === undefined) {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      isAdmin = !!roles;
+      adminCache.set(user.id, isAdmin);
+    }
 
-    if (!roles) throw redirect({ to: "/", search: {} as never });
-    return { user: userData.user };
+    if (!isAdmin) throw redirect({ to: "/", search: {} as never });
+    return { user };
   },
   component: AdminLayout,
 });
