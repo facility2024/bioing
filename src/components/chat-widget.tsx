@@ -137,6 +137,8 @@ export function ChatWidget() {
     }
   };
 
+  if (dialogOpen) return null;
+
   return (
     <>
       {/* Teaser bubble */}
