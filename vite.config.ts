@@ -12,4 +12,37 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    optimizeDeps: {
+      // Pre-bundle heavy deps used across admin pages so navegar entre seções
+      // não dispara "new dependencies optimized" + full reload no dev.
+      include: [
+        "@supabase/supabase-js",
+        "@tanstack/react-query",
+        "@tanstack/react-router",
+        "sonner",
+        "lucide-react",
+        "zod",
+        "clsx",
+        "tailwind-merge",
+        "class-variance-authority",
+        "@radix-ui/react-slot",
+        "@radix-ui/react-label",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-tabs",
+        "@radix-ui/react-select",
+        "@radix-ui/react-switch",
+        "@radix-ui/react-separator",
+        "@radix-ui/react-tooltip",
+        "@radix-ui/react-checkbox",
+        "@radix-ui/react-dropdown-menu",
+        "@radix-ui/react-popover",
+        "@radix-ui/react-avatar",
+        "@radix-ui/react-accordion",
+        "@radix-ui/react-scroll-area",
+        "@radix-ui/react-progress",
+        "react-hook-form",
+      ],
+    },
+  },
 });
