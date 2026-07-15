@@ -51,9 +51,11 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (error) throw new Error("Erro ao ler configuração do WhatsApp");
-    if (!config?.ativa) throw new Error("WhatsApp da loja não está ativo. Fale com o administrador.");
-    if (!config.instance_id || !config.api_token) throw new Error("WhatsApp da loja não configurado");
+    if (!config?.instance_id || !config?.api_token) {
+      throw new Error("WhatsApp da loja não configurado. Fale com o administrador.");
+    }
     if (!config.numero_conectado) throw new Error("Número do atendente não configurado");
+
 
     const itensTxt = data.itens
       .map((it) => `• ${it.quantidade}x ${it.nome} — ${formatBRL(it.preco * it.quantidade)}`)

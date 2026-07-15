@@ -74,7 +74,7 @@ export function CartDrawer() {
               </div>
             </div>
             <Button
-              className="w-full"
+              className="w-full bg-header text-white hover:bg-header/90"
               size="lg"
               onClick={() => {
                 setOpen(false);
@@ -83,6 +83,7 @@ export function CartDrawer() {
             >
               Finalizar pedido
             </Button>
+
             <Button variant="ghost" className="w-full" onClick={clear}>
               Limpar carrinho
             </Button>
