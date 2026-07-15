@@ -24,27 +24,32 @@ export function HomeSlider() {
 
   const [idx, setIdx] = useState(0);
 
+  const [broken, setBroken] = useState<Set<string>>(new Set());
+
+  // Filtra slides com imagem quebrada (evita frame em branco no mobile)
+  const validSlides = (slides ?? []).filter((s) => !broken.has(s.id));
+
   // Reset para o primeiro slide sempre que a lista/ordem mudar
-  const orderKey = (slides ?? []).map((s) => s.id).join("|");
+  const orderKey = validSlides.map((s) => s.id).join("|");
   useEffect(() => {
     setIdx(0);
   }, [orderKey]);
 
   useEffect(() => {
-    if (!slides || slides.length <= 1) return;
-    const secs = Math.max(1, Number(slides[idx]?.intervalo_segundos) || 5);
-    const t = setTimeout(() => setIdx((i) => (i + 1) % slides.length), secs * 1000);
+    if (validSlides.length <= 1) return;
+    const secs = Math.max(1, Number(validSlides[idx]?.intervalo_segundos) || 5);
+    const t = setTimeout(() => setIdx((i) => (i + 1) % validSlides.length), secs * 1000);
     return () => clearTimeout(t);
-  }, [slides, idx]);
+  }, [validSlides, idx]);
 
-  if (!slides || slides.length === 0) return null;
+  if (validSlides.length === 0) return null;
 
   return (
     <div
       className="w-full relative bg-muted overflow-hidden shadow-2xl ring-1 ring-black/5 aspect-[1600/552]"
       style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.05)" }}
     >
-      {slides.map((s, i) => {
+      {validSlides.map((s, i) => {
         const img = (
           <img
             src={s.imagem_url}
@@ -52,6 +57,14 @@ export function HomeSlider() {
             className="w-full h-full object-cover"
             loading="eager"
             decoding="async"
+            onError={() =>
+              setBroken((prev) => {
+                if (prev.has(s.id)) return prev;
+                const next = new Set(prev);
+                next.add(s.id);
+                return next;
+              })
+            }
           />
         );
         return (
@@ -72,9 +85,9 @@ export function HomeSlider() {
           </div>
         );
       })}
-      {slides.length > 1 && (
+      {validSlides.length > 1 && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-          {slides.map((s, i) => (
+          {validSlides.map((s, i) => (
             <button
               key={s.id}
               onClick={() => setIdx(i)}
