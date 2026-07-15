@@ -61,30 +61,29 @@ function Storefront() {
     );
   }, [produtos, busca]);
 
-  const pages = useMemo(() => {
-    const result: ProdutoDetalhe[][] = [];
-    for (let i = 0; i < filtrados.length; i += PAGE_SIZE) {
-      result.push(filtrados.slice(i, i + PAGE_SIZE));
-    }
-    return result;
-  }, [filtrados]);
-  const totalPages = Math.max(1, pages.length);
-  const currentPage = Math.min(page, totalPages);
-
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
 
-  const goTo = (n: number) => {
-    const clamped = Math.min(Math.max(1, n), totalPages);
-    setPage(clamped);
+  const updateArrows = () => {
     const el = scrollerRef.current;
-    if (el) {
-      el.scrollTo({ left: (clamped - 1) * el.clientWidth, behavior: "smooth" });
-    }
+    if (!el) return;
+    setCanPrev(el.scrollLeft > 4);
+    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
   };
 
-  // reset to page 1 when search changes
   useEffect(() => {
-    setPage(1);
+    updateArrows();
+  }, [filtrados]);
+
+  const scrollBy = (dir: 1 | -1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: "smooth" });
+  };
+
+  // reset scroll when search changes
+  useEffect(() => {
     scrollerRef.current?.scrollTo({ left: 0 });
   }, [busca]);
 
@@ -105,7 +104,6 @@ function Storefront() {
       setSelected(p);
       setOpen(true);
     }
-    // limpa o param da URL sem recarregar
     params.delete("produto");
     const qs = params.toString();
     const url = window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
@@ -118,9 +116,9 @@ function Storefront() {
 
       <HomeSlider />
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         {isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="rounded-xl border bg-card animate-pulse">
                 <div className="aspect-square bg-muted rounded-t-xl" />
@@ -156,84 +154,43 @@ function Storefront() {
           </div>
         )}
 
-        {pages.length > 0 && (
-          <div className="relative">
-            {totalPages > 1 && (
-              <button
-                onClick={() => goTo(currentPage - 1)}
-                disabled={currentPage === 1}
-                aria-label="Página anterior"
-                className="hidden md:flex absolute -left-4 lg:-left-6 top-1/2 -translate-y-1/2 z-10 h-12 w-12 items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-lg ring-1 ring-black/5 hover:bg-white hover:scale-105 disabled:opacity-0 disabled:pointer-events-none transition-all"
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </button>
-            )}
+        {filtrados.length > 0 && (
+          <div className="relative group">
+            <button
+              onClick={() => scrollBy(-1)}
+              aria-label="Anterior"
+              className={`absolute left-1 sm:-left-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 sm:h-11 sm:w-11 flex items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-lg ring-1 ring-black/5 hover:bg-white hover:scale-105 transition-all ${
+                canPrev ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+            >
+              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+            </button>
 
             <div
               ref={scrollerRef}
-              onScroll={(e) => {
-                const el = e.currentTarget;
-                const idx = Math.round(el.scrollLeft / el.clientWidth) + 1;
-                if (idx !== currentPage) setPage(idx);
-              }}
-              className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth -mx-4 px-4 no-scrollbar"
+              onScroll={updateArrows}
+              className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-3 sm:gap-4 -mx-3 sm:-mx-4 px-3 sm:px-4 pb-2 no-scrollbar"
               style={{ scrollbarWidth: "none" }}
             >
-              {pages.map((group, gi) => (
+              {filtrados.map((p) => (
                 <div
-                  key={gi}
-                  className="snap-start shrink-0 w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pr-1"
+                  key={p.id}
+                  className="snap-start shrink-0 w-[calc((100%-0.75rem)/2)] sm:w-[calc((100%-2rem)/3)] md:w-[calc((100%-3rem)/4)] lg:w-[calc((100%-4rem)/5)]"
                 >
-                  {group.map((p) => (
-                    <ProductCard key={p.id} produto={p} onOpen={() => openProduct(p)} />
-                  ))}
+                  <ProductCard produto={p} onOpen={() => openProduct(p)} />
                 </div>
               ))}
             </div>
 
-            {totalPages > 1 && (
-              <button
-                onClick={() => goTo(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                aria-label="Próxima página"
-                className="hidden md:flex absolute -right-4 lg:-right-6 top-1/2 -translate-y-1/2 z-10 h-12 w-12 items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-lg ring-1 ring-black/5 hover:bg-white hover:scale-105 disabled:opacity-0 disabled:pointer-events-none transition-all"
-              >
-                <ChevronRight className="h-6 w-6" />
-              </button>
-            )}
-
-            {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-center gap-3">
-                <button
-                  onClick={() => goTo(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  aria-label="Anterior"
-                  className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-full border bg-background hover:bg-muted disabled:opacity-40 disabled:pointer-events-none transition-colors"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                <div className="flex items-center gap-1.5">
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => goTo(i + 1)}
-                      aria-label={`Página ${i + 1}`}
-                      className={`h-2 rounded-full transition-all ${
-                        i + 1 === currentPage ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <button
-                  onClick={() => goTo(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  aria-label="Próxima"
-                  className="md:hidden h-10 w-10 inline-flex items-center justify-center rounded-full border bg-background hover:bg-muted disabled:opacity-40 disabled:pointer-events-none transition-colors"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-              </div>
-            )}
+            <button
+              onClick={() => scrollBy(1)}
+              aria-label="Próxima"
+              className={`absolute right-1 sm:-right-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 sm:h-11 sm:w-11 flex items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-lg ring-1 ring-black/5 hover:bg-white hover:scale-105 transition-all ${
+                canNext ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+            >
+              <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+            </button>
           </div>
         )}
       </main>
@@ -242,6 +199,7 @@ function Storefront() {
     </div>
   );
 }
+
 
 function StoreHeader({ busca, setBusca }: { busca: string; setBusca: (v: string) => void }) {
   const { count, total } = useCart();
