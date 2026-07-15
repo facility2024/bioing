@@ -63,17 +63,33 @@ function ConfigWhatsappPage() {
   }, [data]);
 
   const handleSave = async () => {
-    if (!data?.id) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("configuracoes_whatsapp")
-      .update({
-        instance_id: instanceId.trim() || null,
-        api_token: apiToken.trim() || null,
-        numero_conectado: numero.trim() || null,
-        ativa,
-      })
-      .eq("id", data.id);
+    const payload = {
+      instance_id: instanceId.trim() || null,
+      api_token: apiToken.trim() || null,
+      numero_conectado: numero.trim() || null,
+      ativa,
+    };
+    let error;
+    if (data?.id) {
+      const res = await supabase
+        .from("configuracoes_whatsapp")
+        .update(payload)
+        .eq("id", data.id)
+        .select()
+        .maybeSingle();
+      error = res.error;
+      if (!error && !res.data) {
+        error = { message: "Sem permissão para salvar (verifique se você é admin)." } as any;
+      }
+    } else {
+      const res = await supabase
+        .from("configuracoes_whatsapp")
+        .insert(payload)
+        .select()
+        .maybeSingle();
+      error = res.error;
+    }
     setSaving(false);
     if (error) {
       toast.error("Erro ao salvar: " + error.message);
