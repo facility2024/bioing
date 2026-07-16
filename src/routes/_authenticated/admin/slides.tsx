@@ -33,7 +33,7 @@ type Slide = {
 
 type Secao = { numero: number; titulo: string; ativo: boolean; imagem_url: string | null };
 
-const SECOES = [1, 2, 3, 4] as const;
+const SECOES = [1, 2, 3, 4, 5, 6] as const;
 
 function SlidesAdmin() {
   const qc = useQueryClient();
