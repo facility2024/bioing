@@ -20,6 +20,7 @@ import { useQueryClient } from "@tanstack/react-query";
 const mainItems = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
   { title: "Produtos", url: "/admin/produtos", icon: Package },
+  { title: "Estoque", url: "/admin/estoque", icon: Boxes },
   { title: "Categorias", url: "/admin/categorias", icon: Tags },
   { title: "Pedidos", url: "/admin/pedidos", icon: ShoppingCart },
   { title: "Clientes", url: "/admin/clientes", icon: Users },
