@@ -254,6 +254,10 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
           throw new Error(json?.message || json?.error || `HTTP ${res.status}`);
         }
       }
+
+      // Aguarda 8s antes de enviar o cupom (evita disparos simultâneos).
+      await sleep(8000);
+
       // Envia as duas mensagens de forma independente: se uma falhar, a outra ainda sai.
       const resultados = await Promise.allSettled([
         enviar(config.numero_conectado, mensagemAtendente),
@@ -265,6 +269,64 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
           console.error(`[checkout] WhatsApp (${alvo}) falhou:`, r.reason);
         }
       });
+
+      // Aguarda 15s após o cupom antes de disparar o alerta de estoque baixo.
+      if (baixosParaAlertar.length > 0) {
+        await sleep(15000);
+
+        const { data: wa } = await supabaseAdmin
+          .from("configuracoes_whatsapp")
+          .select("instance_id, api_token, numero_conectado, numero_alerta_estoque, ativa")
+          .limit(1)
+          .maybeSingle();
+
+        const numeroAlertaDestino =
+          (wa as any)?.numero_alerta_estoque || wa?.numero_conectado;
+        const waPronto =
+          !!wa?.instance_id && !!wa?.api_token && !!numeroAlertaDestino && !!wa?.ativa;
+
+        if (!waPronto) {
+          console.warn("[checkout] Estoque baixo detectado, mas WhatsApp não está configurado/ativo.");
+        } else {
+          for (const p of baixosParaAlertar) {
+            let enviado = false;
+            const msg =
+              `🚨 *Olá, Operador/Admin!*\n\n` +
+              `📦 Passando para avisar que o estoque do produto *${p.nome}* está baixo.\n\n` +
+              `⚠️ Restam apenas *${p.estoque} unidades* em estoque.\n\n` +
+              `👀 Fique atento e providencie a reposição o quanto antes para evitar falta do produto.`;
+            try {
+              for (const phone of whatsappPhoneCandidates(numeroAlertaDestino!)) {
+                const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(wa!.instance_id!)}`;
+                const res = await fetch(url, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${wa!.api_token!}`,
+                  },
+                  body: JSON.stringify({ phone, message: msg, delayMessage: 1 }),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok || (json as any)?.error) {
+                  console.error("[checkout] W-API erro no alerta estoque:", res.status, phone, json);
+                  continue;
+                }
+                console.log("[checkout] Alerta de estoque baixo enviado", { produto: p.nome, phone });
+                enviado = true;
+                break;
+              }
+            } catch (e) {
+              console.error("[checkout] Alerta estoque baixo WhatsApp falhou:", e);
+            }
+            if (enviado) {
+              await supabaseAdmin
+                .from("produtos")
+                .update({ notificado_estoque_baixo: true })
+                .eq("id", p.id);
+            }
+          }
+        }
+      }
     } else {
       console.warn("[checkout] WhatsApp não configurado — pedido salvo sem notificação.");
     }
