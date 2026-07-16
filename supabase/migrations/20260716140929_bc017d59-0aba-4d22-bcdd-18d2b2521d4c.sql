@@ -1,0 +1,1 @@
+UPDATE public.produtos SET notificado_estoque_baixo = false WHERE controla_estoque = true AND estoque <= 3;
