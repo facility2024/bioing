@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/rea
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { supabase } from "@/integrations/supabase/client";
+import { EstoqueBaixoAlerta } from "@/components/estoque-baixo-alerta";
 
 const adminCache = new Map<string, boolean>();
 
@@ -50,6 +51,7 @@ function AdminLayout() {
           </main>
         </div>
       </div>
+      <EstoqueBaixoAlerta />
     </SidebarProvider>
   );
 }
