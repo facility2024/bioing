@@ -153,6 +153,7 @@ function RootComponent() {
       </div>
       <Suspense fallback={null}>
         <OfferPopup />
+        <InstallAppPrompt />
       </Suspense>
 
       <Toaster richColors position="top-right" />
