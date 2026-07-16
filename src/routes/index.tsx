@@ -12,8 +12,7 @@ import { ProductDetailDialog, type ProdutoDetalhe } from "@/components/product-d
 import { HomeSlider } from "@/components/home-slider";
 import { toast } from "sonner";
 
-import logoAsset from "@/assets/ingredientes-bio-logo.png.asset.json";
-const LOGO_URL = logoAsset.url;
+const LOGO_URL = "/ingredientes-bio-logo.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
