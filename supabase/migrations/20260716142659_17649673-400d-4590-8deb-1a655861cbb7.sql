@@ -1,0 +1,1 @@
+ALTER TABLE public.configuracoes_whatsapp ADD COLUMN IF NOT EXISTS numero_alerta_estoque TEXT;

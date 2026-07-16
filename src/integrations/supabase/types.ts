@@ -198,6 +198,7 @@ export type Database = {
           created_at: string
           id: string
           instance_id: string | null
+          numero_alerta_estoque: string | null
           numero_conectado: string | null
           updated_at: string
         }
@@ -207,6 +208,7 @@ export type Database = {
           created_at?: string
           id?: string
           instance_id?: string | null
+          numero_alerta_estoque?: string | null
           numero_conectado?: string | null
           updated_at?: string
         }
@@ -216,6 +218,7 @@ export type Database = {
           created_at?: string
           id?: string
           instance_id?: string | null
+          numero_alerta_estoque?: string | null
           numero_conectado?: string | null
           updated_at?: string
         }
