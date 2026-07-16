@@ -75,6 +75,7 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
     // ============ 1) PERSISTIR CLIENTE + PEDIDO + ITENS (SEMPRE) ============
     const telDigits = onlyDigits(data.cliente.telefone);
     let pedidoNumero: string | null = null;
+    let baixosParaAlertar: Array<{ id: string; nome: string; estoque: number }> = [];
 
     try {
       const { data: existente, error: errBusca } = await supabaseAdmin
