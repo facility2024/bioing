@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, X, Volume2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { notificarEstoqueBaixo } from "@/lib/estoque.functions";
 
 type Baixo = { id: string; nome: string; estoque: number };
 
