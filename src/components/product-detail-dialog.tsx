@@ -66,6 +66,7 @@ export function ProductDetailDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="w-[95vw] sm:w-full sm:max-w-3xl p-0 gap-0 overflow-hidden max-h-[92vh] block">
           <DialogTitle className="sr-only">{produto.nome}</DialogTitle>
+          <DialogDescription className="sr-only">Detalhes do produto {produto.nome}</DialogDescription>
           <div className="flex flex-col overflow-y-auto max-h-[92vh]">
             {/* Main image */}
             <div className="p-4 md:p-6 bg-white">
