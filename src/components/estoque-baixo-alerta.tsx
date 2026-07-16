@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, X, Volume2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { notificarEstoqueBaixo } from "@/lib/estoque.functions";
 
 type Baixo = { id: string; nome: string; estoque: number };
 
@@ -68,6 +70,7 @@ function playAlertLoop(): () => void {
 export function EstoqueBaixoAlerta() {
   const [dismissed, setDismissed] = useState<Record<string, number>>(() => readDismissed());
   const stopAudioRef = useRef<null | (() => void)>(null);
+  const notificar = useServerFn(notificarEstoqueBaixo);
 
   const { data: baixos } = useQuery({
     queryKey: ["admin-estoque-baixo"],
@@ -85,6 +88,13 @@ export function EstoqueBaixoAlerta() {
     refetchInterval: 30_000,
     refetchOnWindowFocus: true,
   });
+
+  // Sempre que houver produtos com estoque baixo ainda não notificados,
+  // dispara o envio no WhatsApp da instância (server-side).
+  useEffect(() => {
+    if ((baixos ?? []).length === 0) return;
+    notificar().catch((e) => console.error("[estoque] notificar falhou:", e));
+  }, [baixos, notificar]);
 
   // Só alerta os produtos que o usuário ainda não dispensou nesta versão de estoque.
   // A "versão" é o próprio valor de estoque atual: se o estoque mudar, volta a alertar.
