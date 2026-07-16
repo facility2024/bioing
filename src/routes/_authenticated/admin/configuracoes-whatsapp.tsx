@@ -21,6 +21,7 @@ type Config = {
   instance_id: string | null;
   api_token: string | null;
   numero_conectado: string | null;
+  numero_alerta_estoque: string | null;
   ativa: boolean;
 };
 
