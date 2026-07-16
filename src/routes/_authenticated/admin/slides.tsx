@@ -327,12 +327,42 @@ function SlidesAdmin() {
                       alt="slide"
                       className="h-16 w-32 object-cover rounded border bg-muted"
                     />
-                    <div className="flex-1 min-w-[200px]">
-                      <p className="text-xs text-muted-foreground truncate">{s.imagem_url}</p>
-                      {s.link_url && (
-                        <p className="text-xs text-primary truncate">→ {s.link_url}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">Ordem: {s.ordem}</p>
+                    <div className="flex-1 min-w-[240px] space-y-1">
+                      <Input
+                        key={`img-${s.id}-${s.imagem_url}`}
+                        defaultValue={s.imagem_url}
+                        placeholder="URL da imagem"
+                        className="h-8 text-xs"
+                        onBlur={async (e) => {
+                          const v = e.target.value.trim();
+                          if (!v || v === s.imagem_url) return;
+                          const { error } = await supabase
+                            .from("home_slides")
+                            .update({ imagem_url: v })
+                            .eq("id", s.id);
+                          if (error) return toast.error(error.message);
+                          toast.success("Imagem atualizada");
+                          refresh();
+                        }}
+                      />
+                      <Input
+                        key={`link-${s.id}-${s.link_url ?? ""}`}
+                        defaultValue={s.link_url ?? ""}
+                        placeholder="Link (opcional)"
+                        className="h-8 text-xs"
+                        onBlur={async (e) => {
+                          const v = e.target.value.trim() || null;
+                          if (v === (s.link_url ?? null)) return;
+                          const { error } = await supabase
+                            .from("home_slides")
+                            .update({ link_url: v })
+                            .eq("id", s.id);
+                          if (error) return toast.error(error.message);
+                          toast.success("Link atualizado");
+                          refresh();
+                        }}
+                      />
+                      <p className="text-[11px] text-muted-foreground">Ordem: {s.ordem}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Label className="text-xs whitespace-nowrap">Seção</Label>
