@@ -149,21 +149,48 @@ function Storefront() {
           </>
         )}
 
-        {/* Modo normal: 4 seções em sequência (banner + título + produtos) */}
-        {!buscando && !isLoading && !error && produtos && produtos.length > 0 &&
-          secoesAtivas.map((s) => {
-            const prods = filtrados.filter((p) => (p.secao ?? 1) === s.numero);
-            return (
-              <SecaoHome
-                key={s.numero}
-                numero={s.numero}
-                titulo={s.titulo}
-                imagemUrl={s.imagem_url}
-                produtos={prods}
-                onOpen={openProduct}
-              />
-            );
-          })}
+        {/* Modo normal: seções 1-4 em sequência (full-width) + 5 e 6 lado a lado */}
+        {!buscando && !isLoading && !error && produtos && produtos.length > 0 && (
+          <>
+            {secoesAtivas
+              .filter((s) => s.numero <= 4)
+              .map((s) => {
+                const prods = filtrados.filter((p) => (p.secao ?? 1) === s.numero);
+                return (
+                  <SecaoHome
+                    key={s.numero}
+                    numero={s.numero}
+                    titulo={s.titulo}
+                    imagemUrl={s.imagem_url}
+                    produtos={prods}
+                    onOpen={openProduct}
+                  />
+                );
+              })}
+            {(() => {
+              const duplas = secoesAtivas.filter((s) => s.numero >= 5 && s.numero <= 6);
+              if (duplas.length === 0) return null;
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {duplas.map((s) => {
+                    const prods = filtrados.filter((p) => (p.secao ?? 1) === s.numero);
+                    return (
+                      <SecaoHomeCompacta
+                        key={s.numero}
+                        titulo={s.titulo}
+                        imagemUrl={s.imagem_url}
+                        numero={s.numero}
+                        produtos={prods}
+                        onOpen={openProduct}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </>
+        )}
+
       </main>
 
       <ProductDetailDialog produto={selected} open={open} onOpenChange={setOpen} />
