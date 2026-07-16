@@ -70,6 +70,7 @@ function playAlertLoop(): () => void {
 export function EstoqueBaixoAlerta() {
   const [dismissed, setDismissed] = useState<Record<string, number>>(() => readDismissed());
   const stopAudioRef = useRef<null | (() => void)>(null);
+  const notificar = useServerFn(notificarEstoqueBaixo);
 
   const { data: baixos } = useQuery({
     queryKey: ["admin-estoque-baixo"],
