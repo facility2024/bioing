@@ -23,6 +23,14 @@ export function OfferPopup() {
   const [open, setOpen] = useState(false);
   const { data: config } = useConfigLoja();
 
+  const close = () => {
+    setOpen(false);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("bioing:show-install-prompt"));
+    }
+  };
+
+
   const { data: oferta } = useQuery({
     queryKey: ["oferta-popup"],
     queryFn: async () => {
