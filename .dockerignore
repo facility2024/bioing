@@ -11,6 +11,5 @@ dist
 .idea
 *.log
 .DS_Store
-.env
-.env.*
-!.env.example
+.env.local
+.env.*.local
