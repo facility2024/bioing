@@ -46,6 +46,10 @@ function formatBRL(n: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function validate(input: unknown): CheckoutInput {
   if (!input || typeof input !== "object") throw new Error("Dados inválidos");
   const i = input as CheckoutInput;
