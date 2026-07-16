@@ -131,54 +131,77 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
         produtosAbatidos.push(it.id);
       }
 
-      // Detecta produtos que ficaram com estoque baixo (<=3) e ainda não foram notificados
+      // Detecta produtos com estoque baixo (<=3) e envia alerta no WhatsApp da instância.
       if (produtosAbatidos.length > 0) {
         const { data: baixos } = await supabaseAdmin
           .from("produtos")
           .select("id, nome, estoque")
           .in("id", produtosAbatidos)
           .eq("controla_estoque", true)
+          .eq("ativo", true)
           .eq("notificado_estoque_baixo", false)
           .lte("estoque", 3);
 
         if (baixos && baixos.length > 0) {
           const { data: wa } = await supabaseAdmin
             .from("configuracoes_whatsapp")
-            .select("instance_id, api_token, numero_conectado")
+            .select("instance_id, api_token, numero_conectado, ativa")
             .limit(1)
             .maybeSingle();
 
-          for (const p of baixos) {
-            const msg =
-              `🚨 *Olá, Operador/Admin!*\n\n` +
-              `📦 Passando para avisar que o estoque do produto *${p.nome}* está baixo.\n\n` +
-              `⚠️ Restam apenas *${p.estoque} unidades* em estoque.\n\n` +
-              `👀 Fique atento e providencie a reposição o quanto antes para evitar falta do produto.`;
+          const waPronto =
+            !!wa?.instance_id && !!wa?.api_token && !!wa?.numero_conectado && !!wa?.ativa;
+          if (!waPronto) {
+            console.warn(
+              "[checkout] Estoque baixo detectado, mas WhatsApp não está configurado/ativo.",
+            );
+          }
 
-            if (wa?.instance_id && wa?.api_token && wa?.numero_conectado) {
+          for (const p of baixos) {
+            let enviado = false;
+            if (waPronto) {
+              const msg =
+                `🚨 *Olá, Operador/Admin!*\n\n` +
+                `📦 Passando para avisar que o estoque do produto *${p.nome}* está baixo.\n\n` +
+                `⚠️ Restam apenas *${p.estoque} unidades* em estoque.\n\n` +
+                `👀 Fique atento e providencie a reposição o quanto antes para evitar falta do produto.`;
               try {
-                const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(wa.instance_id)}`;
-                await fetch(url, {
+                const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(wa!.instance_id!)}`;
+                const res = await fetch(url, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${wa.api_token}`,
+                    Authorization: `Bearer ${wa!.api_token!}`,
                   },
                   body: JSON.stringify({
-                    phone: onlyDigits(wa.numero_conectado),
+                    phone: onlyDigits(wa!.numero_conectado!),
                     message: msg,
                     delayMessage: 1,
                   }),
                 });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok || (json as any)?.error) {
+                  console.error(
+                    "[checkout] W-API retornou erro no alerta de estoque baixo:",
+                    res.status,
+                    json,
+                  );
+                } else {
+                  enviado = true;
+                }
               } catch (e) {
                 console.error("[checkout] Alerta estoque baixo WhatsApp falhou:", e);
               }
             }
 
-            await supabaseAdmin
-              .from("produtos")
-              .update({ notificado_estoque_baixo: true })
-              .eq("id", p.id);
+            // Só marca como notificado quando o envio foi confirmado. Caso contrário,
+            // um novo checkout (ou o polling do painel admin) tentará novamente.
+            if (enviado) {
+              await supabaseAdmin
+                .from("produtos")
+                .update({ notificado_estoque_baixo: true })
+                .eq("id", p.id);
+            }
           }
         }
       }
