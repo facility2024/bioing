@@ -45,19 +45,13 @@ export function OfferPopup() {
     },
   });
 
-  const { data: ofertaData, isSuccess } = useQuery({
-    queryKey: ["oferta-popup"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("oferta_popup")
-        .select("id, ativo, titulo, descricao, imagem_url, cta_texto, cta_url, mostrar_logo, auto_fechar_segundos, fechar_manualmente")
-        .eq("ativo", true)
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data as unknown as Oferta | null;
-    },
+  const { isSuccess } = useQuery({
+    queryKey: ["oferta-popup-status"],
+    queryFn: async () => true,
+    enabled: false,
+    initialData: true,
   });
+
 
   useEffect(() => {
     if (!isSuccess) return;
