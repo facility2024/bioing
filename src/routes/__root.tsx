@@ -18,6 +18,9 @@ import { ThemeApplier, useConfigLoja } from "@/hooks/use-config-loja";
 const OfferPopup = lazy(() =>
   import("@/components/offer-popup").then((m) => ({ default: m.OfferPopup })),
 );
+const InstallAppPrompt = lazy(() =>
+  import("@/components/install-app-prompt").then((m) => ({ default: m.InstallAppPrompt })),
+);
 
 
 function NotFoundComponent() {
