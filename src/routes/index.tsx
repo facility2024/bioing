@@ -183,7 +183,9 @@ function SecaoHome({
 }) {
   return (
     <section className="space-y-4">
-      <HomeSlider secao={numero} />
+      <div className="-mx-3 sm:-mx-4 lg:mx-[calc(50%-50vw)]">
+        <HomeSlider secao={numero} />
+      </div>
       {titulo && (
         <h2 className="text-xl sm:text-2xl font-bold tracking-tight px-1">{titulo}</h2>
       )}
