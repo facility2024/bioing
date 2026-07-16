@@ -149,7 +149,8 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
         produtosAbatidos.push(it.id);
       }
 
-      // Detecta produtos com estoque baixo (<=3) e envia alerta no WhatsApp da instância.
+      // Detecta produtos com estoque baixo (<=3) — envio do alerta é feito depois do cupom.
+      var baixosParaAlertar: Array<{ id: string; nome: string; estoque: number }> = [];
       if (produtosAbatidos.length > 0) {
         const { data: baixos } = await supabaseAdmin
           .from("produtos")
@@ -159,76 +160,10 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
           .eq("ativo", true)
           .eq("notificado_estoque_baixo", false)
           .lte("estoque", 3);
-
         if (baixos && baixos.length > 0) {
-          const { data: wa } = await supabaseAdmin
-            .from("configuracoes_whatsapp")
-            .select("instance_id, api_token, numero_conectado, numero_alerta_estoque, ativa")
-            .limit(1)
-            .maybeSingle();
-
-          const numeroAlertaDestino =
-            (wa as any)?.numero_alerta_estoque || wa?.numero_conectado;
-          const waPronto =
-            !!wa?.instance_id && !!wa?.api_token && !!numeroAlertaDestino && !!wa?.ativa;
-          if (!waPronto) {
-            console.warn(
-              "[checkout] Estoque baixo detectado, mas WhatsApp não está configurado/ativo.",
-              { temInstance: !!wa?.instance_id, temToken: !!wa?.api_token, temNumero: !!numeroAlertaDestino, ativa: !!wa?.ativa },
-            );
-          }
-
-          for (const p of baixos) {
-            let enviado = false;
-            if (waPronto) {
-              const msg =
-                `🚨 *Olá, Operador/Admin!*\n\n` +
-                `📦 Passando para avisar que o estoque do produto *${p.nome}* está baixo.\n\n` +
-                `⚠️ Restam apenas *${p.estoque} unidades* em estoque.\n\n` +
-                `👀 Fique atento e providencie a reposição o quanto antes para evitar falta do produto.`;
-              try {
-                for (const phone of whatsappPhoneCandidates(numeroAlertaDestino!)) {
-                  const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(wa!.instance_id!)}`;
-                  const res = await fetch(url, {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${wa!.api_token!}`,
-                    },
-                    body: JSON.stringify({
-                      phone,
-                      message: msg,
-                      delayMessage: 1,
-                    }),
-                  });
-                  const json = await res.json().catch(() => ({}));
-                  if (!res.ok || (json as any)?.error) {
-                    console.error(
-                      "[checkout] W-API retornou erro no alerta de estoque baixo:",
-                      res.status,
-                      phone,
-                      json,
-                    );
-                    continue;
-                  }
-                  console.log("[checkout] Alerta de estoque baixo enviado", { produto: p.nome, phone });
-                  enviado = true;
-                  break;
-                }
-              } catch (e) {
-                console.error("[checkout] Alerta estoque baixo WhatsApp falhou:", e);
-              }
-            }
-
-            // Só marca como notificado quando o envio foi confirmado. Caso contrário,
-            // um novo checkout (ou o polling do painel admin) tentará novamente.
-            if (enviado) {
-              await supabaseAdmin
-                .from("produtos")
-                .update({ notificado_estoque_baixo: true })
-                .eq("id", p.id);
-            }
-          }
+          baixosParaAlertar = baixos as any;
+        }
+      }
         }
       }
     } catch (e) {
