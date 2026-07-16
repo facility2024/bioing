@@ -159,15 +159,18 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
         if (baixos && baixos.length > 0) {
           const { data: wa } = await supabaseAdmin
             .from("configuracoes_whatsapp")
-            .select("instance_id, api_token, numero_conectado, ativa")
+            .select("instance_id, api_token, numero_conectado, numero_alerta_estoque, ativa")
             .limit(1)
             .maybeSingle();
 
+          const numeroAlertaDestino =
+            (wa as any)?.numero_alerta_estoque || wa?.numero_conectado;
           const waPronto =
-            !!wa?.instance_id && !!wa?.api_token && !!wa?.numero_conectado && !!wa?.ativa;
+            !!wa?.instance_id && !!wa?.api_token && !!numeroAlertaDestino && !!wa?.ativa;
           if (!waPronto) {
             console.warn(
               "[checkout] Estoque baixo detectado, mas WhatsApp não está configurado/ativo.",
+              { temInstance: !!wa?.instance_id, temToken: !!wa?.api_token, temNumero: !!numeroAlertaDestino, ativa: !!wa?.ativa },
             );
           }
 
@@ -180,7 +183,7 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
                 `⚠️ Restam apenas *${p.estoque} unidades* em estoque.\n\n` +
                 `👀 Fique atento e providencie a reposição o quanto antes para evitar falta do produto.`;
               try {
-                for (const phone of whatsappPhoneCandidates(wa!.numero_conectado!)) {
+                for (const phone of whatsappPhoneCandidates(numeroAlertaDestino!)) {
                   const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(wa!.instance_id!)}`;
                   const res = await fetch(url, {
                     method: "POST",
@@ -204,6 +207,7 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
                     );
                     continue;
                   }
+                  console.log("[checkout] Alerta de estoque baixo enviado", { produto: p.nome, phone });
                   enviado = true;
                   break;
                 }
