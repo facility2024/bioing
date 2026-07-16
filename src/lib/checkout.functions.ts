@@ -28,6 +28,20 @@ function onlyDigits(s: string) {
   return (s || "").replace(/\D/g, "");
 }
 
+function whatsappPhoneCandidates(phone: string) {
+  const digits = onlyDigits(phone);
+  const candidates: string[] = [];
+
+  // A W-API pode retornar o número conectado sem o 9º dígito em celulares BR.
+  // Para envio, tenta primeiro o formato atual: 55 + DDD + 9 + número.
+  if (digits.startsWith("55") && digits.length === 12) {
+    candidates.push(`${digits.slice(0, 4)}9${digits.slice(4)}`);
+  }
+
+  if (digits.length >= 10) candidates.push(digits);
+  return [...new Set(candidates)];
+}
+
 function formatBRL(n: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
 }
@@ -166,28 +180,32 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
                 `⚠️ Restam apenas *${p.estoque} unidades* em estoque.\n\n` +
                 `👀 Fique atento e providencie a reposição o quanto antes para evitar falta do produto.`;
               try {
-                const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(wa!.instance_id!)}`;
-                const res = await fetch(url, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${wa!.api_token!}`,
-                  },
-                  body: JSON.stringify({
-                    phone: onlyDigits(wa!.numero_conectado!),
-                    message: msg,
-                    delayMessage: 1,
-                  }),
-                });
-                const json = await res.json().catch(() => ({}));
-                if (!res.ok || (json as any)?.error) {
-                  console.error(
-                    "[checkout] W-API retornou erro no alerta de estoque baixo:",
-                    res.status,
-                    json,
-                  );
-                } else {
+                for (const phone of whatsappPhoneCandidates(wa!.numero_conectado!)) {
+                  const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(wa!.instance_id!)}`;
+                  const res = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${wa!.api_token!}`,
+                    },
+                    body: JSON.stringify({
+                      phone,
+                      message: msg,
+                      delayMessage: 1,
+                    }),
+                  });
+                  const json = await res.json().catch(() => ({}));
+                  if (!res.ok || (json as any)?.error) {
+                    console.error(
+                      "[checkout] W-API retornou erro no alerta de estoque baixo:",
+                      res.status,
+                      phone,
+                      json,
+                    );
+                    continue;
+                  }
                   enviado = true;
+                  break;
                 }
               } catch (e) {
                 console.error("[checkout] Alerta estoque baixo WhatsApp falhou:", e);
