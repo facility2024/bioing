@@ -1,31 +1,44 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-type Slide = { id: string; imagem_url: string; link_url: string | null; intervalo_segundos: number | null };
+type Slide = {
+  id: string;
+  imagem_url: string;
+  link_url: string | null;
+  intervalo_segundos: number | null;
+  ordem: number;
+  secao: number;
+};
 
 export function HomeSlider({ secao = 1 }: { secao?: number }) {
-  const { data: slides } = useQuery({
-    queryKey: ["home-slides", secao],
+  // Query única compartilhada por TODAS as instâncias do slider —
+  // evita 6 requisições paralelas (uma por seção) no carregamento inicial.
+  const { data: todosSlides } = useQuery({
+    queryKey: ["home-slides-all"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_slides")
-        .select("id, imagem_url, link_url, intervalo_segundos, ordem")
+        .select("id, imagem_url, link_url, intervalo_segundos, ordem, secao")
         .eq("ativo", true)
-        .eq("secao", secao)
+        .order("secao", { ascending: true })
         .order("ordem", { ascending: true });
       if (error) throw error;
-      const rows = (data ?? []) as (Slide & { ordem: number })[];
-      return [...rows].sort((a, b) => a.ordem - b.ordem) as Slide[];
+      return (data ?? []) as Slide[];
     },
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
+
+  const slides = useMemo(
+    () => (todosSlides ?? []).filter((s) => s.secao === secao),
+    [todosSlides, secao],
+  );
 
   const [idx, setIdx] = useState(0);
   const [broken, setBroken] = useState<Set<string>>(new Set());
 
-  const validSlides = (slides ?? []).filter((s) => !broken.has(s.id));
+  const validSlides = slides.filter((s) => !broken.has(s.id));
 
   const orderKey = validSlides.map((s) => s.id).join("|");
   useEffect(() => {
@@ -52,8 +65,9 @@ export function HomeSlider({ secao = 1 }: { secao?: number }) {
             src={s.imagem_url}
             alt="Banner promocional"
             className="w-full h-full object-cover"
-            loading="eager"
+            loading={i === 0 ? "eager" : "lazy"}
             decoding="async"
+            fetchPriority={i === 0 ? "high" : "auto"}
             onError={() =>
               setBroken((prev) => {
                 if (prev.has(s.id)) return prev;
