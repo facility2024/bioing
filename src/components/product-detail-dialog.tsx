@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Minus, Plus, ShoppingCart, Truck, ShieldCheck, Package, FileText } from "lucide-react";
@@ -66,6 +66,7 @@ export function ProductDetailDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="w-[95vw] sm:w-full sm:max-w-3xl p-0 gap-0 overflow-hidden max-h-[92vh] block">
           <DialogTitle className="sr-only">{produto.nome}</DialogTitle>
+          <DialogDescription className="sr-only">Detalhes do produto {produto.nome}</DialogDescription>
           <div className="flex flex-col overflow-y-auto max-h-[92vh]">
             {/* Main image */}
             <div className="p-4 md:p-6 bg-white">
@@ -189,6 +190,7 @@ export function ProductDetailDialog({
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Descrição do produto</DialogTitle>
+            <DialogDescription className="sr-only">Descrição completa do produto</DialogDescription>
           </DialogHeader>
           <div className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
             {produto.descricao}
