@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 type ItemPayload = {
+  id?: string;
   nome: string;
   preco: number;
   quantidade: number;
