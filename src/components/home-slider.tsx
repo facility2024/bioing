@@ -4,18 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Slide = { id: string; imagem_url: string; link_url: string | null; intervalo_segundos: number | null };
 
-export function HomeSlider() {
+export function HomeSlider({ secao = 1 }: { secao?: number }) {
   const { data: slides } = useQuery({
-    queryKey: ["home-slides"],
+    queryKey: ["home-slides", secao],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_slides")
         .select("id, imagem_url, link_url, intervalo_segundos, ordem")
         .eq("ativo", true)
+        .eq("secao", secao)
         .order("ordem", { ascending: true });
       if (error) throw error;
       const rows = (data ?? []) as (Slide & { ordem: number })[];
-      // Garante ordem correta no cliente (mobile pode receber cache antigo)
       return [...rows].sort((a, b) => a.ordem - b.ordem) as Slide[];
     },
     staleTime: 0,
@@ -23,13 +23,10 @@ export function HomeSlider() {
   });
 
   const [idx, setIdx] = useState(0);
-
   const [broken, setBroken] = useState<Set<string>>(new Set());
 
-  // Filtra slides com imagem quebrada (evita frame em branco no mobile)
   const validSlides = (slides ?? []).filter((s) => !broken.has(s.id));
 
-  // Reset para o primeiro slide sempre que a lista/ordem mudar
   const orderKey = validSlides.map((s) => s.id).join("|");
   useEffect(() => {
     setIdx(0);
