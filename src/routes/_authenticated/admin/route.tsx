@@ -51,6 +51,7 @@ function AdminLayout() {
           </main>
         </div>
       </div>
+      <EstoqueBaixoAlerta />
     </SidebarProvider>
   );
 }
