@@ -45,10 +45,32 @@ export function OfferPopup() {
     },
   });
 
+  const { data: ofertaData, isSuccess } = useQuery({
+    queryKey: ["oferta-popup"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("oferta_popup")
+        .select("id, ativo, titulo, descricao, imagem_url, cta_texto, cta_url, mostrar_logo, auto_fechar_segundos, fechar_manualmente")
+        .eq("ativo", true)
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as Oferta | null;
+    },
+  });
+
   useEffect(() => {
-    if (!oferta) return;
+    if (!isSuccess) return;
     if (typeof window === "undefined") return;
-    if (sessionStorage.getItem(SESSION_KEY) === oferta.id) return;
+    const dispatchInstall = () => window.dispatchEvent(new Event("bioing:show-install-prompt"));
+    if (!oferta) {
+      dispatchInstall();
+      return;
+    }
+    if (sessionStorage.getItem(SESSION_KEY) === oferta.id) {
+      dispatchInstall();
+      return;
+    }
     if (window.location.search.includes("produto=")) {
       sessionStorage.setItem(SESSION_KEY, oferta.id);
       return;
@@ -60,7 +82,7 @@ export function OfferPopup() {
       const t = setTimeout(() => close(), secs * 1000);
       return () => clearTimeout(t);
     }
-  }, [oferta]);
+  }, [oferta, isSuccess]);
 
   // Fecha o popup se um produto for aberto via URL (?produto=...)
   useEffect(() => {
