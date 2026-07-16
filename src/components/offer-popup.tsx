@@ -31,7 +31,7 @@ export function OfferPopup() {
   };
 
 
-  const { data: oferta } = useQuery({
+  const { data: oferta, isSuccess } = useQuery({
     queryKey: ["oferta-popup"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -45,12 +45,6 @@ export function OfferPopup() {
     },
   });
 
-  const { isSuccess } = useQuery({
-    queryKey: ["oferta-popup-status"],
-    queryFn: async () => true,
-    enabled: false,
-    initialData: true,
-  });
 
 
   useEffect(() => {
