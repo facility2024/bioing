@@ -60,6 +60,7 @@ function ConfigWhatsappPage() {
       setInstanceId(data.instance_id ?? "");
       setApiToken(data.api_token ?? "");
       setNumero(data.numero_conectado ?? "");
+      setNumeroAlerta(data.numero_alerta_estoque ?? "");
       setAtiva(data.ativa);
     }
   }, [data]);
@@ -70,6 +71,7 @@ function ConfigWhatsappPage() {
       instance_id: instanceId.trim() || null,
       api_token: apiToken.trim() || null,
       numero_conectado: numero.trim() || null,
+      numero_alerta_estoque: numeroAlerta.trim() || null,
       ativa,
     };
     let error;
