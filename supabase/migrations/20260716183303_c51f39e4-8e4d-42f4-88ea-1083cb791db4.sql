@@ -1,0 +1,1 @@
+ALTER TABLE public.home_secoes ADD COLUMN IF NOT EXISTS imagem_url text;

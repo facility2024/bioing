@@ -31,7 +31,7 @@ type Slide = {
   secao: number;
 };
 
-type Secao = { numero: number; titulo: string; ativo: boolean };
+type Secao = { numero: number; titulo: string; ativo: boolean; imagem_url: string | null };
 
 const SECOES = [1, 2, 3, 4] as const;
 
@@ -61,7 +61,7 @@ function SlidesAdmin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_secoes")
-        .select("numero, titulo, ativo")
+        .select("numero, titulo, ativo, imagem_url")
         .order("numero");
       if (error) throw error;
       return (data ?? []) as Secao[];
@@ -156,36 +156,68 @@ function SlidesAdmin() {
           </p>
           <div className="grid gap-3 md:grid-cols-2">
             {(secoes ?? []).map((s) => (
-              <div key={s.numero} className="flex items-center gap-2 border rounded-lg p-3">
-                <span className="text-xs font-semibold text-muted-foreground w-16 shrink-0">
-                  Seção {s.numero}
-                </span>
-                <Input
-                  defaultValue={s.titulo}
-                  placeholder={`Ex: Aromas Doces`}
-                  className="h-9"
-                  onBlur={async (e) => {
-                    const v = e.target.value.trim();
-                    if (v === s.titulo) return;
-                    const { error } = await supabase
-                      .from("home_secoes")
-                      .update({ titulo: v })
-                      .eq("numero", s.numero);
-                    if (error) return toast.error(error.message);
-                    toast.success(`Seção ${s.numero} atualizada`);
-                    refresh();
-                  }}
-                />
-                <div className="flex items-center gap-1.5">
-                  <Label className="text-xs">Ativa</Label>
-                  <Switch
-                    checked={s.ativo}
-                    onCheckedChange={async (v) => {
+              <div key={s.numero} className="flex flex-col gap-2 border rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-muted-foreground w-16 shrink-0">
+                    Seção {s.numero}
+                  </span>
+                  <Input
+                    defaultValue={s.titulo}
+                    placeholder={`Ex: Aromas Doces`}
+                    className="h-9"
+                    onBlur={async (e) => {
+                      const v = e.target.value.trim();
+                      if (v === s.titulo) return;
                       const { error } = await supabase
                         .from("home_secoes")
-                        .update({ ativo: v })
+                        .update({ titulo: v })
                         .eq("numero", s.numero);
                       if (error) return toast.error(error.message);
+                      toast.success(`Seção ${s.numero} atualizada`);
+                      refresh();
+                    }}
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <Label className="text-xs">Ativa</Label>
+                    <Switch
+                      checked={s.ativo}
+                      onCheckedChange={async (v) => {
+                        const { error } = await supabase
+                          .from("home_secoes")
+                          .update({ ativo: v })
+                          .eq("numero", s.numero);
+                        if (error) return toast.error(error.message);
+                        refresh();
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-muted-foreground w-16 shrink-0">
+                    Imagem
+                  </span>
+                  {s.imagem_url ? (
+                    <img
+                      src={s.imagem_url}
+                      alt=""
+                      className="h-9 w-9 object-cover rounded border bg-muted shrink-0"
+                    />
+                  ) : (
+                    <div className="h-9 w-9 rounded border bg-muted shrink-0" />
+                  )}
+                  <Input
+                    defaultValue={s.imagem_url ?? ""}
+                    placeholder="URL da imagem (opcional)"
+                    className="h-9"
+                    onBlur={async (e) => {
+                      const v = e.target.value.trim() || null;
+                      if (v === (s.imagem_url ?? null)) return;
+                      const { error } = await supabase
+                        .from("home_secoes")
+                        .update({ imagem_url: v })
+                        .eq("numero", s.numero);
+                      if (error) return toast.error(error.message);
+                      toast.success(`Imagem da seção ${s.numero} atualizada`);
                       refresh();
                     }}
                   />

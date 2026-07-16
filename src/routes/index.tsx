@@ -55,10 +55,10 @@ function Storefront() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_secoes")
-        .select("numero, titulo, ativo")
+        .select("numero, titulo, ativo, imagem_url")
         .order("numero", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as { numero: number; titulo: string; ativo: boolean }[];
+      return (data ?? []) as { numero: number; titulo: string; ativo: boolean; imagem_url: string | null }[];
     },
     staleTime: 0,
   });
@@ -158,6 +158,7 @@ function Storefront() {
                 key={s.numero}
                 numero={s.numero}
                 titulo={s.titulo}
+                imagemUrl={s.imagem_url}
                 produtos={prods}
                 onOpen={openProduct}
               />
@@ -173,11 +174,13 @@ function Storefront() {
 function SecaoHome({
   numero,
   titulo,
+  imagemUrl,
   produtos,
   onOpen,
 }: {
   numero: number;
   titulo: string;
+  imagemUrl?: string | null;
   produtos: ProdutoLoja[];
   onOpen: (p: ProdutoDetalhe) => void;
 }) {
@@ -186,8 +189,19 @@ function SecaoHome({
       <div className="-mx-3 sm:-mx-4 lg:mx-[calc(50%-50vw)]">
         <HomeSlider secao={numero} />
       </div>
-      {titulo && (
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight px-1">{titulo}</h2>
+      {(titulo || imagemUrl) && (
+        <div className="flex items-center gap-3 px-1">
+          {imagemUrl && (
+            <img
+              src={imagemUrl}
+              alt=""
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full object-cover ring-1 ring-black/5 shrink-0"
+            />
+          )}
+          {titulo && (
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{titulo}</h2>
+          )}
+        </div>
       )}
       {produtos.length === 0 ? (
         <p className="text-sm text-muted-foreground px-1">
