@@ -45,6 +45,7 @@ function ConfigWhatsappPage() {
   const [instanceId, setInstanceId] = useState("");
   const [apiToken, setApiToken] = useState("");
   const [numero, setNumero] = useState("");
+  const [numeroAlerta, setNumeroAlerta] = useState("");
   const [ativa, setAtiva] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
