@@ -47,16 +47,23 @@ export const notificarEstoqueBaixo = createServerFn({ method: "POST" })
 
     const { data: wa } = await supabaseAdmin
       .from("configuracoes_whatsapp")
-      .select("instance_id, api_token, numero_conectado, ativa")
+      .select("instance_id, api_token, numero_conectado, numero_alerta_estoque, ativa")
       .limit(1)
       .maybeSingle();
 
-    if (!wa?.instance_id || !wa?.api_token || !wa?.numero_conectado || !wa?.ativa) {
+    if (!wa?.instance_id || !wa?.api_token || !wa?.ativa) {
       console.warn("[estoque] WhatsApp não configurado/ativo — pulando alerta.");
       return { notificados: 0, motivo: "whatsapp_nao_configurado" };
     }
 
-    const destinos = whatsappPhoneCandidates(wa.numero_conectado);
+    // Prioriza o número dedicado de alerta de estoque; se vazio, cai no número da instância.
+    const numeroDestino = (wa as any).numero_alerta_estoque || wa.numero_conectado;
+    if (!numeroDestino) {
+      console.warn("[estoque] Nenhum número de alerta configurado.");
+      return { notificados: 0, motivo: "sem_numero_alerta" };
+    }
+
+    const destinos = whatsappPhoneCandidates(numeroDestino);
     const destinoPrincipal = destinos[0] ?? onlyDigits(wa.numero_conectado);
     console.log(
       "[estoque] enviando alerta p/ instância",
