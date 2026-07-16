@@ -64,7 +64,7 @@ export const notificarEstoqueBaixo = createServerFn({ method: "POST" })
     }
 
     const destinos = whatsappPhoneCandidates(numeroDestino);
-    const destinoPrincipal = destinos[0] ?? onlyDigits(wa.numero_conectado);
+    const destinoPrincipal = destinos[0] ?? onlyDigits(numeroDestino);
     console.log(
       "[estoque] enviando alerta p/ instância",
       wa.instance_id,
