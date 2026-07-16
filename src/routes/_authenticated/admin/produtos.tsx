@@ -36,6 +36,7 @@ type Produto = {
   controla_estoque: boolean;
   ativo: boolean;
   categoria_id: string | null;
+  secao: number;
 };
 
 type Categoria = { id: string; nome: string };
@@ -51,6 +52,7 @@ const emptyForm = {
   controla_estoque: false,
   ativo: true,
   categoria_id: "" as string | "",
+  secao: 1 as number,
 };
 
 function ProdutosAdmin() {
