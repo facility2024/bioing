@@ -311,6 +311,28 @@ function ProdutosAdmin() {
             </div>
 
             <div className="space-y-1.5">
+              <Label htmlFor="secao">Seção na home</Label>
+              <Select
+                value={String(form.secao || 1)}
+                onValueChange={(v) => setForm({ ...form, secao: Number(v) })}
+              >
+                <SelectTrigger id="secao">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      Seção {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Define em qual bloco da página inicial este produto será exibido (abaixo do banner correspondente).
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
               <Label htmlFor="img">Imagem principal (URL)</Label>
               <Input
                 id="img"
