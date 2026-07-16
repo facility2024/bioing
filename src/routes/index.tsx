@@ -51,6 +51,8 @@ function Storefront() {
       if (error) throw error;
       return data as unknown as ProdutoLoja[];
     },
+    staleTime: 2 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   const { data: secoes } = useQuery({
@@ -63,7 +65,8 @@ function Storefront() {
       if (error) throw error;
       return (data ?? []) as { numero: number; titulo: string; ativo: boolean; imagem_url: string | null }[];
     },
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   const filtrados = useMemo(() => {
