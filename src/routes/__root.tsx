@@ -148,8 +148,10 @@ function RootComponent() {
         </div>
         <SiteFooter />
       </div>
-      <OfferPopup />
-      
+      <Suspense fallback={null}>
+        <OfferPopup />
+      </Suspense>
+
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
