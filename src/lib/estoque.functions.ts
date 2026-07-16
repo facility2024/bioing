@@ -42,7 +42,18 @@ export const notificarEstoqueBaixo = createServerFn({ method: "POST" })
       return { notificados: 0, motivo: "whatsapp_nao_configurado" };
     }
 
+    const destino = onlyDigits(wa.numero_conectado);
+    console.log(
+      "[estoque] enviando alerta p/ instância",
+      wa.instance_id,
+      "destino=",
+      destino,
+      "produtos=",
+      baixos.length,
+    );
+
     let ok = 0;
+    const detalhes: any[] = [];
     for (const p of baixos) {
       const msg =
         `🚨 *Olá, Operador/Admin!*\n\n` +
@@ -59,14 +70,21 @@ export const notificarEstoqueBaixo = createServerFn({ method: "POST" })
             Authorization: `Bearer ${wa.api_token}`,
           },
           body: JSON.stringify({
-            phone: onlyDigits(wa.numero_conectado),
+            phone: destino,
             message: msg,
             delayMessage: 1,
           }),
         });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok || (json as any)?.error) {
-          console.error("[estoque] W-API retornou erro:", res.status, json);
+        const txt = await res.text();
+        let json: any = {};
+        try {
+          json = JSON.parse(txt);
+        } catch {}
+        console.log("[estoque] W-API resposta", res.status, txt);
+        detalhes.push({ produto: p.nome, status: res.status, body: json || txt });
+
+        if (!res.ok || json?.error) {
+          console.error("[estoque] W-API erro:", res.status, txt);
           continue;
         }
         await supabaseAdmin
@@ -76,7 +94,8 @@ export const notificarEstoqueBaixo = createServerFn({ method: "POST" })
         ok++;
       } catch (e) {
         console.error("[estoque] falha ao enviar WhatsApp:", e);
+        detalhes.push({ produto: p.nome, erro: (e as Error).message });
       }
     }
-    return { notificados: ok };
+    return { notificados: ok, destino, detalhes };
   });
