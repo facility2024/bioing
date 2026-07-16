@@ -31,7 +31,7 @@ type Slide = {
   secao: number;
 };
 
-type Secao = { numero: number; titulo: string; ativo: boolean };
+type Secao = { numero: number; titulo: string; ativo: boolean; imagem_url: string | null };
 
 const SECOES = [1, 2, 3, 4] as const;
 
@@ -61,7 +61,7 @@ function SlidesAdmin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_secoes")
-        .select("numero, titulo, ativo")
+        .select("numero, titulo, ativo, imagem_url")
         .order("numero");
       if (error) throw error;
       return (data ?? []) as Secao[];
