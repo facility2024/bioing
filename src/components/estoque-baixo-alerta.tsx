@@ -27,40 +27,22 @@ function writeDismissed(map: Record<string, number>) {
   }
 }
 
+const ALERT_SOUND_URL =
+  "https://COCONUDIMUDIAL.b-cdn.net/ANUNCIANTES%20COCONUDI/ALERTA%20DE%20ESTOQUE%20BAIXO.mp3";
+
 /**
- * Emite um bipe usando Web Audio (sem depender de arquivo de áudio).
- * Retorna uma função para parar.
+ * Toca o MP3 de alerta em loop. Retorna uma função para parar.
  */
 function playAlertLoop(): () => void {
   if (typeof window === "undefined") return () => {};
-  const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext | undefined;
-  if (!AC) return () => {};
-  const ctx = new AC();
-  let stopped = false;
-  let timer: number | null = null;
-
-  const beep = () => {
-    if (stopped) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.35, ctx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.4);
-  };
-
-  beep();
-  timer = window.setInterval(beep, 1400);
-
+  const audio = new Audio(ALERT_SOUND_URL);
+  audio.loop = true;
+  audio.volume = 1;
+  audio.play().catch((e) => console.warn("[estoque] falha ao tocar alerta:", e));
   return () => {
-    stopped = true;
-    if (timer !== null) window.clearInterval(timer);
     try {
-      ctx.close();
+      audio.pause();
+      audio.currentTime = 0;
     } catch {
       /* ignore */
     }

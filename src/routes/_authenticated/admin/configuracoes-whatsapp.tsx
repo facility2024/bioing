@@ -21,6 +21,7 @@ type Config = {
   instance_id: string | null;
   api_token: string | null;
   numero_conectado: string | null;
+  numero_alerta_estoque: string | null;
   ativa: boolean;
 };
 
@@ -44,6 +45,7 @@ function ConfigWhatsappPage() {
   const [instanceId, setInstanceId] = useState("");
   const [apiToken, setApiToken] = useState("");
   const [numero, setNumero] = useState("");
+  const [numeroAlerta, setNumeroAlerta] = useState("");
   const [ativa, setAtiva] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -58,6 +60,7 @@ function ConfigWhatsappPage() {
       setInstanceId(data.instance_id ?? "");
       setApiToken(data.api_token ?? "");
       setNumero(data.numero_conectado ?? "");
+      setNumeroAlerta(data.numero_alerta_estoque ?? "");
       setAtiva(data.ativa);
     }
   }, [data]);
@@ -68,6 +71,7 @@ function ConfigWhatsappPage() {
       instance_id: instanceId.trim() || null,
       api_token: apiToken.trim() || null,
       numero_conectado: numero.trim() || null,
+      numero_alerta_estoque: numeroAlerta.trim() || null,
       ativa,
     };
     let error;
@@ -246,6 +250,23 @@ function ConfigWhatsappPage() {
               Este é o número que está logado na instância. Pode ser trocado escaneando um novo QR Code no painel da W-API — atualize aqui após a troca.
             </p>
           </div>
+
+          <div className="space-y-2 rounded-lg border border-dashed p-4 bg-muted/30">
+            <Label htmlFor="numero-alerta" className="text-sm font-medium">
+              📦 Número oficial para alertas de estoque
+            </Label>
+            <Input
+              id="numero-alerta"
+              placeholder="Ex.: 5511999999999"
+              value={numeroAlerta}
+              onChange={(e) => setNumeroAlerta(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Número do WhatsApp que receberá as notificações de estoque baixo (≤ 3 unidades).
+              Se ficar vazio, o alerta é enviado para o próprio número conectado à instância.
+            </p>
+          </div>
+
 
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
