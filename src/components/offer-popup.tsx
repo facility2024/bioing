@@ -68,11 +68,11 @@ export function OfferPopup() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 animate-fade-in"
       onClick={() => setOpen(false)}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl bg-card shadow-2xl overflow-hidden animate-scale-in"
+        className="relative w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-card shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -91,7 +91,7 @@ export function OfferPopup() {
         )}
 
         {oferta.imagem_url && (
-          <img src={oferta.imagem_url} alt={oferta.titulo ?? "Oferta"} className="w-full h-56 object-cover" />
+          <img src={oferta.imagem_url} alt={oferta.titulo ?? "Oferta"} className="w-full h-44 sm:h-56 object-cover" />
         )}
 
         <div className="p-6 text-center space-y-3">
