@@ -400,9 +400,12 @@ function ProductCard({ produto, onOpen }: { produto: ProdutoDetalhe; onOpen: () 
           <p className="text-[11px] text-primary">
             3x de {formatBRL(Number(produto.preco) / 3)} sem juros
           </p>
-          <p className="text-[11px] text-emerald-600 flex items-center gap-1">
-            <Truck className="h-3 w-3" /> Frete grátis
-          </p>
+          {/* Badge "Frete grátis" oculto — reativar quando solicitado */}
+          {false && (
+            <p className="text-[11px] text-emerald-600 flex items-center gap-1">
+              <Truck className="h-3 w-3" /> Frete grátis
+            </p>
+          )}
         </div>
         <Button onClick={handleAdd} disabled={semEstoque} className="w-full mt-2" size="sm">
           {semEstoque ? "Esgotado" : "Adicionar ao carrinho"}
