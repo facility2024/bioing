@@ -85,7 +85,7 @@ export function OfferPopup() {
       >
         <button
           type="button"
-          onClick={() => setOpen(false)}
+          onClick={() => close()}
           aria-label="Fechar"
           className="absolute top-3 right-3 z-20 h-9 w-9 rounded-full bg-black/60 text-white grid place-items-center hover:bg-black/80 transition cursor-pointer"
         >
