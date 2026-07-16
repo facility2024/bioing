@@ -57,7 +57,7 @@ export function OfferPopup() {
     sessionStorage.setItem(SESSION_KEY, oferta.id);
     const secs = Number(oferta.auto_fechar_segundos) || 0;
     if (secs > 0) {
-      const t = setTimeout(() => setOpen(false), secs * 1000);
+      const t = setTimeout(() => close(), secs * 1000);
       return () => clearTimeout(t);
     }
   }, [oferta]);
