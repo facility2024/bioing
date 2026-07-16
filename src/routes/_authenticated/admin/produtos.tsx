@@ -36,6 +36,7 @@ type Produto = {
   controla_estoque: boolean;
   ativo: boolean;
   categoria_id: string | null;
+  secao: number;
 };
 
 type Categoria = { id: string; nome: string };
@@ -51,6 +52,7 @@ const emptyForm = {
   controla_estoque: false,
   ativo: true,
   categoria_id: "" as string | "",
+  secao: 1 as number,
 };
 
 function ProdutosAdmin() {
@@ -65,7 +67,7 @@ function ProdutosAdmin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("produtos")
-        .select("id, nome, descricao, preco, imagem_url, imagens, estoque, controla_estoque, ativo, categoria_id")
+        .select("id, nome, descricao, preco, imagem_url, imagens, estoque, controla_estoque, ativo, categoria_id, secao")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Produto[];
@@ -105,6 +107,7 @@ function ProdutosAdmin() {
       controla_estoque: !!p.controla_estoque,
       ativo: !!p.ativo,
       categoria_id: p.categoria_id ?? "",
+      secao: p.secao ?? 1,
     });
     setNewImg("");
     setOpen(true);
@@ -142,6 +145,7 @@ function ProdutosAdmin() {
       controla_estoque: form.controla_estoque,
       ativo: form.ativo,
       categoria_id: form.categoria_id || null,
+      secao: form.secao || 1,
     };
     const { error } = form.id
       ? await supabase.from("produtos").update(payload as any).eq("id", form.id)
@@ -304,6 +308,28 @@ function ProdutosAdmin() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="secao">Seção na home</Label>
+              <Select
+                value={String(form.secao || 1)}
+                onValueChange={(v) => setForm({ ...form, secao: Number(v) })}
+              >
+                <SelectTrigger id="secao">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      Seção {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Define em qual bloco da página inicial este produto será exibido (abaixo do banner correspondente).
+              </p>
             </div>
 
             <div className="space-y-1.5">

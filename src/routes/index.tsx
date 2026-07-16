@@ -30,23 +30,37 @@ export const Route = createFileRoute("/")({
   ),
 });
 
+type ProdutoLoja = ProdutoDetalhe & { secao?: number | null };
+
 function Storefront() {
   const [selected, setSelected] = useState<ProdutoDetalhe | null>(null);
   const [open, setOpen] = useState(false);
   const [busca, setBusca] = useState("");
-
 
   const { data: produtos, isLoading, error } = useQuery({
     queryKey: ["produtos-loja"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("produtos")
-        .select("id, nome, descricao, preco, imagem_url, imagens, estoque, controla_estoque")
+        .select("id, nome, descricao, preco, imagem_url, imagens, estoque, controla_estoque, secao")
         .eq("ativo", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as unknown as ProdutoDetalhe[];
+      return data as unknown as ProdutoLoja[];
     },
+  });
+
+  const { data: secoes } = useQuery({
+    queryKey: ["home-secoes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("home_secoes")
+        .select("numero, titulo, ativo")
+        .order("numero", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as { numero: number; titulo: string; ativo: boolean }[];
+    },
+    staleTime: 0,
   });
 
   const filtrados = useMemo(() => {
@@ -60,38 +74,12 @@ function Storefront() {
     );
   }, [produtos, busca]);
 
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
-
-  const updateArrows = () => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    setCanPrev(el.scrollLeft > 4);
-    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  };
-
-  useEffect(() => {
-    updateArrows();
-  }, [filtrados]);
-
-  const scrollBy = (dir: 1 | -1) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: "smooth" });
-  };
-
-  // reset scroll when search changes
-  useEffect(() => {
-    scrollerRef.current?.scrollTo({ left: 0 });
-  }, [busca]);
-
   const openProduct = (p: ProdutoDetalhe) => {
     setSelected(p);
     setOpen(true);
   };
 
-  // Abre produto direto quando vier ?produto=<id> na URL (usado pelo popup de oferta)
+  // Abre produto direto quando vier ?produto=<id> na URL
   useEffect(() => {
     if (!produtos || produtos.length === 0) return;
     if (typeof window === "undefined") return;
@@ -109,13 +97,14 @@ function Storefront() {
     window.history.replaceState({}, "", url);
   }, [produtos]);
 
+  const buscando = busca.trim().length > 0;
+  const secoesAtivas = (secoes ?? []).filter((s) => s.ativo);
+
   return (
     <div className="min-h-screen bg-background">
       <StoreHeader busca={busca} setBusca={setBusca} />
 
-      <HomeSlider />
-
-      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-10">
         {isLoading && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -147,54 +136,133 @@ function Storefront() {
           </div>
         )}
 
-        {produtos && produtos.length > 0 && filtrados.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">
-            Nenhum produto encontrado para “{busca}”.
-          </div>
+        {/* Modo busca: exibe todos os produtos filtrados numa única grade */}
+        {buscando && produtos && produtos.length > 0 && (
+          <>
+            {filtrados.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                Nenhum produto encontrado para “{busca}”.
+              </div>
+            ) : (
+              <ProdutosCarousel produtos={filtrados} onOpen={openProduct} />
+            )}
+          </>
         )}
 
-        {filtrados.length > 0 && (
-          <div className="relative group">
-            <button
-              onClick={() => scrollBy(-1)}
-              aria-label="Anterior"
-              className={`absolute left-1 sm:-left-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 sm:h-11 sm:w-11 flex items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-lg ring-1 ring-black/5 hover:bg-white hover:scale-105 transition-all ${
-                canPrev ? "opacity-100" : "opacity-0 pointer-events-none"
-              }`}
-            >
-              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
-            </button>
-
-            <div
-              ref={scrollerRef}
-              onScroll={updateArrows}
-              className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-3 sm:gap-4 -mx-3 sm:-mx-4 px-3 sm:px-4 pb-2 no-scrollbar"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {filtrados.map((p) => (
-                <div
-                  key={p.id}
-                  className="snap-start shrink-0 w-[calc((100%-0.75rem)/2)] sm:w-[calc((100%-2rem)/3)] md:w-[calc((100%-3rem)/4)] lg:w-[calc((100%-4rem)/5)]"
-                >
-                  <ProductCard produto={p} onOpen={() => openProduct(p)} />
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={() => scrollBy(1)}
-              aria-label="Próxima"
-              className={`absolute right-1 sm:-right-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 sm:h-11 sm:w-11 flex items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-lg ring-1 ring-black/5 hover:bg-white hover:scale-105 transition-all ${
-                canNext ? "opacity-100" : "opacity-0 pointer-events-none"
-              }`}
-            >
-              <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
-            </button>
-          </div>
-        )}
+        {/* Modo normal: 4 seções em sequência (banner + título + produtos) */}
+        {!buscando && !isLoading && !error && produtos && produtos.length > 0 &&
+          secoesAtivas.map((s) => {
+            const prods = filtrados.filter((p) => (p.secao ?? 1) === s.numero);
+            return (
+              <SecaoHome
+                key={s.numero}
+                numero={s.numero}
+                titulo={s.titulo}
+                produtos={prods}
+                onOpen={openProduct}
+              />
+            );
+          })}
       </main>
 
       <ProductDetailDialog produto={selected} open={open} onOpenChange={setOpen} />
+    </div>
+  );
+}
+
+function SecaoHome({
+  numero,
+  titulo,
+  produtos,
+  onOpen,
+}: {
+  numero: number;
+  titulo: string;
+  produtos: ProdutoLoja[];
+  onOpen: (p: ProdutoDetalhe) => void;
+}) {
+  return (
+    <section className="space-y-4">
+      <HomeSlider secao={numero} />
+      {titulo && (
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight px-1">{titulo}</h2>
+      )}
+      {produtos.length === 0 ? (
+        <p className="text-sm text-muted-foreground px-1">
+          Nenhum produto nesta seção ainda.
+        </p>
+      ) : (
+        <ProdutosCarousel produtos={produtos} onOpen={onOpen} />
+      )}
+    </section>
+  );
+}
+
+function ProdutosCarousel({
+  produtos,
+  onOpen,
+}: {
+  produtos: ProdutoLoja[];
+  onOpen: (p: ProdutoDetalhe) => void;
+}) {
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+
+  const updateArrows = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setCanPrev(el.scrollLeft > 4);
+    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    updateArrows();
+  }, [produtos]);
+
+  const scrollBy = (dir: 1 | -1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative group">
+      <button
+        onClick={() => scrollBy(-1)}
+        aria-label="Anterior"
+        className={`absolute left-1 sm:-left-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 sm:h-11 sm:w-11 flex items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-lg ring-1 ring-black/5 hover:bg-white hover:scale-105 transition-all ${
+          canPrev ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+      >
+        <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+      </button>
+
+      <div
+        ref={scrollerRef}
+        onScroll={updateArrows}
+        className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth gap-3 sm:gap-4 -mx-3 sm:-mx-4 px-3 sm:px-4 pb-2 no-scrollbar"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {produtos.map((p) => (
+          <div
+            key={p.id}
+            className="snap-start shrink-0 w-[calc((100%-0.75rem)/2)] sm:w-[calc((100%-2rem)/3)] md:w-[calc((100%-3rem)/4)] lg:w-[calc((100%-4rem)/5)]"
+          >
+            <ProductCard produto={p} onOpen={() => onOpen(p)} />
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={() => scrollBy(1)}
+        aria-label="Próxima"
+        className={`absolute right-1 sm:-right-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 sm:h-11 sm:w-11 flex items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-lg ring-1 ring-black/5 hover:bg-white hover:scale-105 transition-all ${
+          canNext ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+      >
+        <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+      </button>
     </div>
   );
 }

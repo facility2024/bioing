@@ -271,6 +271,30 @@ export type Database = {
           },
         ]
       }
+      home_secoes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          numero: number
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          numero: number
+          titulo?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          numero?: number
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       home_slides: {
         Row: {
           ativo: boolean
@@ -280,6 +304,7 @@ export type Database = {
           intervalo_segundos: number
           link_url: string | null
           ordem: number
+          secao: number
           updated_at: string
         }
         Insert: {
@@ -290,6 +315,7 @@ export type Database = {
           intervalo_segundos?: number
           link_url?: string | null
           ordem?: number
+          secao?: number
           updated_at?: string
         }
         Update: {
@@ -300,6 +326,7 @@ export type Database = {
           intervalo_segundos?: number
           link_url?: string | null
           ordem?: number
+          secao?: number
           updated_at?: string
         }
         Relationships: []
@@ -468,6 +495,7 @@ export type Database = {
           nome: string
           notificado_estoque_baixo: boolean
           preco: number
+          secao: number
           updated_at: string
         }
         Insert: {
@@ -483,6 +511,7 @@ export type Database = {
           nome: string
           notificado_estoque_baixo?: boolean
           preco: number
+          secao?: number
           updated_at?: string
         }
         Update: {
@@ -498,6 +527,7 @@ export type Database = {
           nome?: string
           notificado_estoque_baixo?: boolean
           preco?: number
+          secao?: number
           updated_at?: string
         }
         Relationships: [
