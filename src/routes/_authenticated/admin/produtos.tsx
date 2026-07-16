@@ -67,7 +67,7 @@ function ProdutosAdmin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("produtos")
-        .select("id, nome, descricao, preco, imagem_url, imagens, estoque, controla_estoque, ativo, categoria_id")
+        .select("id, nome, descricao, preco, imagem_url, imagens, estoque, controla_estoque, ativo, categoria_id, secao")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as Produto[];
