@@ -23,7 +23,15 @@ export function OfferPopup() {
   const [open, setOpen] = useState(false);
   const { data: config } = useConfigLoja();
 
-  const { data: oferta } = useQuery({
+  const close = () => {
+    setOpen(false);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("bioing:show-install-prompt"));
+    }
+  };
+
+
+  const { data: oferta, isSuccess } = useQuery({
     queryKey: ["oferta-popup"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -37,10 +45,20 @@ export function OfferPopup() {
     },
   });
 
+
+
   useEffect(() => {
-    if (!oferta) return;
+    if (!isSuccess) return;
     if (typeof window === "undefined") return;
-    if (sessionStorage.getItem(SESSION_KEY) === oferta.id) return;
+    const dispatchInstall = () => window.dispatchEvent(new Event("bioing:show-install-prompt"));
+    if (!oferta) {
+      dispatchInstall();
+      return;
+    }
+    if (sessionStorage.getItem(SESSION_KEY) === oferta.id) {
+      dispatchInstall();
+      return;
+    }
     if (window.location.search.includes("produto=")) {
       sessionStorage.setItem(SESSION_KEY, oferta.id);
       return;
@@ -49,10 +67,10 @@ export function OfferPopup() {
     sessionStorage.setItem(SESSION_KEY, oferta.id);
     const secs = Number(oferta.auto_fechar_segundos) || 0;
     if (secs > 0) {
-      const t = setTimeout(() => setOpen(false), secs * 1000);
+      const t = setTimeout(() => close(), secs * 1000);
       return () => clearTimeout(t);
     }
-  }, [oferta]);
+  }, [oferta, isSuccess]);
 
   // Fecha o popup se um produto for aberto via URL (?produto=...)
   useEffect(() => {
@@ -69,7 +87,7 @@ export function OfferPopup() {
   return (
     <div
       className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4 animate-fade-in"
-      onClick={() => setOpen(false)}
+      onClick={() => close()}
     >
       <div
         className="relative w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-card shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto animate-scale-in"
@@ -77,7 +95,7 @@ export function OfferPopup() {
       >
         <button
           type="button"
-          onClick={() => setOpen(false)}
+          onClick={() => close()}
           aria-label="Fechar"
           className="absolute top-3 right-3 z-20 h-9 w-9 rounded-full bg-black/60 text-white grid place-items-center hover:bg-black/80 transition cursor-pointer"
         >
