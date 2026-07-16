@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 type ItemPayload = {
+  id?: string;
   nome: string;
   preco: number;
   quantidade: number;
@@ -110,6 +111,7 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
 
       const itensPayload = data.itens.map((it) => ({
         pedido_id: pedido!.id,
+        produto_id: it.id ?? null,
         produto_nome: it.nome,
         quantidade: it.quantidade,
         valor_unitario: it.preco,
@@ -117,6 +119,15 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       }));
       const { error: errItens } = await supabaseAdmin.from("itens_pedido").insert(itensPayload);
       if (errItens) throw new Error(`Erro ao criar itens: ${errItens.message}`);
+
+      // Abate estoque dos produtos que controlam estoque
+      for (const it of data.itens) {
+        if (!it.id) continue;
+        await supabaseAdmin.rpc("abater_estoque", {
+          _produto_id: it.id,
+          _quantidade: it.quantidade,
+        });
+      }
     } catch (e) {
       console.error("[checkout] Falha ao registrar pedido:", e);
       throw new Error(

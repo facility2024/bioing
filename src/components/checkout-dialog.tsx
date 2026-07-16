@@ -70,7 +70,7 @@ export function CheckoutDialog({
             cep: cep.trim() || undefined,
             observacoes: obs.trim() || undefined,
           },
-          itens: items.map((it) => ({ nome: it.nome, preco: it.preco, quantidade: it.quantidade })),
+          itens: items.map((it) => ({ id: it.id, nome: it.nome, preco: it.preco, quantidade: it.quantidade })),
           total,
           origin: typeof window !== "undefined" ? window.location.origin : undefined,
         },

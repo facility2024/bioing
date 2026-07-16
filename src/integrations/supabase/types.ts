@@ -530,6 +530,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      abater_estoque: {
+        Args: { _produto_id: string; _quantidade: number }
+        Returns: undefined
+      }
       gerar_numero_pedido: { Args: never; Returns: string }
       has_role: {
         Args: {
