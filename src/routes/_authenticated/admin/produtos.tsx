@@ -145,6 +145,7 @@ function ProdutosAdmin() {
       controla_estoque: form.controla_estoque,
       ativo: form.ativo,
       categoria_id: form.categoria_id || null,
+      secao: form.secao || 1,
     };
     const { error } = form.id
       ? await supabase.from("produtos").update(payload as any).eq("id", form.id)
