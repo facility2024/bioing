@@ -89,6 +89,13 @@ export function EstoqueBaixoAlerta() {
     refetchOnWindowFocus: true,
   });
 
+  // Sempre que houver produtos com estoque baixo ainda não notificados,
+  // dispara o envio no WhatsApp da instância (server-side).
+  useEffect(() => {
+    if ((baixos ?? []).length === 0) return;
+    notificar().catch((e) => console.error("[estoque] notificar falhou:", e));
+  }, [baixos, notificar]);
+
   // Só alerta os produtos que o usuário ainda não dispensou nesta versão de estoque.
   // A "versão" é o próprio valor de estoque atual: se o estoque mudar, volta a alertar.
   const pendentes = (baixos ?? []).filter((p) => dismissed[p.id] !== p.estoque);
