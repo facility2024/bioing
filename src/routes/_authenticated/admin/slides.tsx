@@ -7,6 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Trash2, GripVertical } from "lucide-react";
 
@@ -21,13 +28,19 @@ type Slide = {
   ordem: number;
   ativo: boolean;
   intervalo_segundos: number | null;
+  secao: number;
 };
+
+type Secao = { numero: number; titulo: string; ativo: boolean };
+
+const SECOES = [1, 2, 3, 4] as const;
 
 function SlidesAdmin() {
   const qc = useQueryClient();
   const [imagem, setImagem] = useState("");
   const [link, setLink] = useState("");
   const [intervalo, setIntervalo] = useState("5");
+  const [secao, setSecao] = useState<number>(1);
   const [saving, setSaving] = useState(false);
 
   const { data: slides, isLoading } = useQuery({
@@ -36,22 +49,38 @@ function SlidesAdmin() {
       const { data, error } = await supabase
         .from("home_slides")
         .select("*")
+        .order("secao", { ascending: true })
         .order("ordem", { ascending: true });
       if (error) throw error;
       return (data ?? []) as Slide[];
     },
   });
 
+  const { data: secoes } = useQuery({
+    queryKey: ["admin-home-secoes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("home_secoes")
+        .select("numero, titulo, ativo")
+        .order("numero");
+      if (error) throw error;
+      return (data ?? []) as Secao[];
+    },
+  });
+
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["admin-slides"] });
     qc.invalidateQueries({ queryKey: ["home-slides"] });
+    qc.invalidateQueries({ queryKey: ["admin-home-secoes"] });
+    qc.invalidateQueries({ queryKey: ["home-secoes"] });
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!imagem.trim()) return toast.error("Informe a URL da imagem");
     setSaving(true);
-    const nextOrdem = (slides?.length ?? 0) + 1;
+    const daSecao = (slides ?? []).filter((s) => s.secao === secao);
+    const nextOrdem = daSecao.length + 1;
     const secs = Math.max(1, parseInt(intervalo, 10) || 5);
     const { error } = await supabase.from("home_slides").insert({
       imagem_url: imagem.trim(),
@@ -59,6 +88,7 @@ function SlidesAdmin() {
       ordem: nextOrdem,
       ativo: true,
       intervalo_segundos: secs,
+      secao,
     });
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -86,13 +116,24 @@ function SlidesAdmin() {
     refresh();
   };
 
+  const changeSecao = async (s: Slide, novaSecao: number) => {
+    if (novaSecao === s.secao) return;
+    const daNova = (slides ?? []).filter((x) => x.secao === novaSecao);
+    const { error } = await supabase
+      .from("home_slides")
+      .update({ secao: novaSecao, ordem: daNova.length + 1 })
+      .eq("id", s.id);
+    if (error) return toast.error(error.message);
+    toast.success("Seção alterada");
+    refresh();
+  };
+
   const move = async (s: Slide, dir: -1 | 1) => {
-    const list = [...(slides ?? [])];
+    const list = (slides ?? []).filter((x) => x.secao === s.secao);
     const idx = list.findIndex((x) => x.id === s.id);
     const swap = idx + dir;
     if (swap < 0 || swap >= list.length) return;
     const other = list[swap];
-    // 3-step swap com valor temporário para evitar conflitos de ordem duplicada
     const tempOrdem = -Date.now();
     const r1 = await supabase.from("home_slides").update({ ordem: tempOrdem }).eq("id", s.id);
     if (r1.error) return toast.error("Erro ao reordenar: " + r1.error.message);
@@ -104,13 +145,63 @@ function SlidesAdmin() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-5xl">
+      <Card>
+        <CardHeader>
+          <CardTitle>Títulos das seções</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground mb-3">
+            Cada seção exibe: banner (slides desta seção) + título + produtos vinculados. A ordem na home é 1 → 2 → 3 → 4.
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            {(secoes ?? []).map((s) => (
+              <div key={s.numero} className="flex items-center gap-2 border rounded-lg p-3">
+                <span className="text-xs font-semibold text-muted-foreground w-16 shrink-0">
+                  Seção {s.numero}
+                </span>
+                <Input
+                  defaultValue={s.titulo}
+                  placeholder={`Ex: Aromas Doces`}
+                  className="h-9"
+                  onBlur={async (e) => {
+                    const v = e.target.value.trim();
+                    if (v === s.titulo) return;
+                    const { error } = await supabase
+                      .from("home_secoes")
+                      .update({ titulo: v })
+                      .eq("numero", s.numero);
+                    if (error) return toast.error(error.message);
+                    toast.success(`Seção ${s.numero} atualizada`);
+                    refresh();
+                  }}
+                />
+                <div className="flex items-center gap-1.5">
+                  <Label className="text-xs">Ativa</Label>
+                  <Switch
+                    checked={s.ativo}
+                    onCheckedChange={async (v) => {
+                      const { error } = await supabase
+                        .from("home_secoes")
+                        .update({ ativo: v })
+                        .eq("numero", s.numero);
+                      if (error) return toast.error(error.message);
+                      refresh();
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Adicionar slide</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleAdd} className="grid gap-4 md:grid-cols-[1fr_1fr_140px_auto] items-end">
+          <form onSubmit={handleAdd} className="grid gap-4 md:grid-cols-[1fr_1fr_120px_140px_auto] items-end">
             <div className="space-y-1">
               <Label>URL da imagem</Label>
               <Input
@@ -128,6 +219,21 @@ function SlidesAdmin() {
               />
             </div>
             <div className="space-y-1">
+              <Label>Seção</Label>
+              <Select value={String(secao)} onValueChange={(v) => setSecao(Number(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SECOES.map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      Seção {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
               <Label>Tempo (segundos)</Label>
               <Input
                 type="number"
@@ -141,89 +247,118 @@ function SlidesAdmin() {
             </Button>
           </form>
           <p className="text-xs text-muted-foreground mt-3">
-            Recomendado: imagens no formato <strong>1600x552 pixels</strong> (paisagem). O banner é exibido no topo da loja mantendo essa proporção.
+            Recomendado: imagens no formato <strong>1600x552 pixels</strong> (paisagem).
           </p>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Slides cadastrados</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
-          {!isLoading && (slides?.length ?? 0) === 0 && (
-            <p className="text-sm text-muted-foreground">Nenhum slide cadastrado ainda.</p>
-          )}
-          <ul className="space-y-3">
-            {slides?.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 border rounded-lg p-3">
-                <div className="flex flex-col">
-                  <button
-                    onClick={() => move(s, -1)}
-                    className="text-xs px-1 hover:bg-muted rounded"
-                    aria-label="Subir"
-                  >
-                    ▲
-                  </button>
-                  <GripVertical className="h-3 w-3 text-muted-foreground mx-auto" />
-                  <button
-                    onClick={() => move(s, 1)}
-                    className="text-xs px-1 hover:bg-muted rounded"
-                    aria-label="Descer"
-                  >
-                    ▼
-                  </button>
-                </div>
-                <img
-                  src={s.imagem_url}
-                  alt="slide"
-                  className="h-16 w-32 object-cover rounded border bg-muted"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground truncate">{s.imagem_url}</p>
-                  {s.link_url && (
-                    <p className="text-xs text-primary truncate">→ {s.link_url}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">Ordem: {s.ordem}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs whitespace-nowrap">Tempo (s)</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    defaultValue={s.intervalo_segundos ?? 5}
-                    className="h-8 w-20"
-                    onBlur={async (e) => {
-                      const v = Math.max(1, parseInt(e.target.value, 10) || 5);
-                      if (v === (s.intervalo_segundos ?? 5)) return;
-                      const { error } = await supabase
-                        .from("home_slides")
-                        .update({ intervalo_segundos: v })
-                        .eq("id", s.id);
-                      if (error) return toast.error(error.message);
-                      toast.success("Tempo atualizado");
-                      refresh();
-                    }}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">Ativo</Label>
-                  <Switch checked={s.ativo} onCheckedChange={() => toggleAtivo(s)} />
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => remove(s.id)}
-                  className="text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+      {SECOES.map((num) => {
+        const daSecao = (slides ?? []).filter((s) => s.secao === num);
+        const tituloSecao = (secoes ?? []).find((s) => s.numero === num)?.titulo || `Seção ${num}`;
+        return (
+          <Card key={num}>
+            <CardHeader>
+              <CardTitle className="text-base">
+                Slides — Seção {num}
+                {tituloSecao && (
+                  <span className="text-muted-foreground font-normal"> · {tituloSecao}</span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+              {!isLoading && daSecao.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhum slide nesta seção.</p>
+              )}
+              <ul className="space-y-3">
+                {daSecao.map((s) => (
+                  <li key={s.id} className="flex items-center gap-3 border rounded-lg p-3 flex-wrap">
+                    <div className="flex flex-col">
+                      <button
+                        onClick={() => move(s, -1)}
+                        className="text-xs px-1 hover:bg-muted rounded"
+                        aria-label="Subir"
+                      >
+                        ▲
+                      </button>
+                      <GripVertical className="h-3 w-3 text-muted-foreground mx-auto" />
+                      <button
+                        onClick={() => move(s, 1)}
+                        className="text-xs px-1 hover:bg-muted rounded"
+                        aria-label="Descer"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                    <img
+                      src={s.imagem_url}
+                      alt="slide"
+                      className="h-16 w-32 object-cover rounded border bg-muted"
+                    />
+                    <div className="flex-1 min-w-[200px]">
+                      <p className="text-xs text-muted-foreground truncate">{s.imagem_url}</p>
+                      {s.link_url && (
+                        <p className="text-xs text-primary truncate">→ {s.link_url}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">Ordem: {s.ordem}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs whitespace-nowrap">Seção</Label>
+                      <Select
+                        value={String(s.secao)}
+                        onValueChange={(v) => changeSecao(s, Number(v))}
+                      >
+                        <SelectTrigger className="h-8 w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SECOES.map((n) => (
+                            <SelectItem key={n} value={String(n)}>
+                              Seção {n}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs whitespace-nowrap">Tempo (s)</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        defaultValue={s.intervalo_segundos ?? 5}
+                        className="h-8 w-20"
+                        onBlur={async (e) => {
+                          const v = Math.max(1, parseInt(e.target.value, 10) || 5);
+                          if (v === (s.intervalo_segundos ?? 5)) return;
+                          const { error } = await supabase
+                            .from("home_slides")
+                            .update({ intervalo_segundos: v })
+                            .eq("id", s.id);
+                          if (error) return toast.error(error.message);
+                          toast.success("Tempo atualizado");
+                          refresh();
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs">Ativo</Label>
+                      <Switch checked={s.ativo} onCheckedChange={() => toggleAtivo(s)} />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => remove(s.id)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
