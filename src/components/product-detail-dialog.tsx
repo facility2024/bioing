@@ -118,16 +118,19 @@ export function ProductDetailDialog({
                 </p>
               </div>
 
-              <div className="rounded-lg border p-3 space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-emerald-600">
-                  <Truck className="h-4 w-4" />
-                  <span className="font-medium">Frete grátis</span>
+              {/* Card "Frete grátis / Compra garantida" oculto — reativar quando solicitado */}
+              {false && (
+                <div className="rounded-lg border p-3 space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-emerald-600">
+                    <Truck className="h-4 w-4" />
+                    <span className="font-medium">Frete grátis</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>Compra garantida</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <ShieldCheck className="h-4 w-4" />
-                  <span>Compra garantida</span>
-                </div>
-              </div>
+              )}
 
               {produto.descricao && (
                 <Button variant="outline" onClick={() => setDescOpen(true)} className="w-full">
