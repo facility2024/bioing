@@ -150,7 +150,6 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       }
 
       // Detecta produtos com estoque baixo (<=3) — envio do alerta é feito depois do cupom.
-      var baixosParaAlertar: Array<{ id: string; nome: string; estoque: number }> = [];
       if (produtosAbatidos.length > 0) {
         const { data: baixos } = await supabaseAdmin
           .from("produtos")
@@ -162,8 +161,6 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
           .lte("estoque", 3);
         if (baixos && baixos.length > 0) {
           baixosParaAlertar = baixos as any;
-        }
-      }
         }
       }
     } catch (e) {
