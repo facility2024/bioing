@@ -41,6 +41,10 @@ export function OfferPopup() {
     if (!oferta) return;
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem(SESSION_KEY) === oferta.id) return;
+    if (window.location.search.includes("produto=")) {
+      sessionStorage.setItem(SESSION_KEY, oferta.id);
+      return;
+    }
     setOpen(true);
     sessionStorage.setItem(SESSION_KEY, oferta.id);
     const secs = Number(oferta.auto_fechar_segundos) || 0;
@@ -49,6 +53,16 @@ export function OfferPopup() {
       return () => clearTimeout(t);
     }
   }, [oferta]);
+
+  // Fecha o popup se um produto for aberto via URL (?produto=...)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const check = () => {
+      if (window.location.search.includes("produto=")) setOpen(false);
+    };
+    window.addEventListener("popstate", check);
+    return () => window.removeEventListener("popstate", check);
+  }, []);
 
   if (!oferta || !open) return null;
 
