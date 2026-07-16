@@ -107,6 +107,7 @@ function ProdutosAdmin() {
       controla_estoque: !!p.controla_estoque,
       ativo: !!p.ativo,
       categoria_id: p.categoria_id ?? "",
+      secao: p.secao ?? 1,
     });
     setNewImg("");
     setOpen(true);
