@@ -241,6 +241,50 @@ function SecaoHome({
   );
 }
 
+function SecaoHomeCompacta({
+  numero,
+  titulo,
+  imagemUrl,
+  produtos,
+  onOpen,
+}: {
+  numero: number;
+  titulo: string;
+  imagemUrl?: string | null;
+  produtos: ProdutoLoja[];
+  onOpen: (p: ProdutoDetalhe) => void;
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="w-full overflow-hidden rounded-xl">
+        <HomeSlider secao={numero} />
+      </div>
+      {(titulo || imagemUrl) && (
+        <div className="flex items-center gap-2 px-1">
+          {imagemUrl && (
+            <img
+              src={imagemUrl}
+              alt=""
+              className="h-8 w-8 rounded-full object-cover ring-1 ring-black/5 shrink-0"
+            />
+          )}
+          {titulo && (
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight">{titulo}</h2>
+          )}
+        </div>
+      )}
+      {produtos.length === 0 ? (
+        <p className="text-sm text-muted-foreground px-1">
+          Nenhum produto nesta seção ainda.
+        </p>
+      ) : (
+        <ProdutosCarousel produtos={produtos} onOpen={onOpen} />
+      )}
+    </section>
+  );
+}
+
+
 function ProdutosCarousel({
   produtos,
   onOpen,
