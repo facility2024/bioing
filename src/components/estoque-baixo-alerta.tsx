@@ -85,7 +85,8 @@ export function EstoqueBaixoAlerta() {
       if (error) throw error;
       return (data ?? []) as Baixo[];
     },
-    refetchInterval: 30_000,
+    refetchInterval: 8_000,
+    refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
   });
 
