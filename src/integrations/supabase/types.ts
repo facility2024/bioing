@@ -463,6 +463,7 @@ export type Database = {
           imagem_url: string | null
           imagens: string[]
           nome: string
+          notificado_estoque_baixo: boolean
           preco: number
           updated_at: string
         }
@@ -477,6 +478,7 @@ export type Database = {
           imagem_url?: string | null
           imagens?: string[]
           nome: string
+          notificado_estoque_baixo?: boolean
           preco: number
           updated_at?: string
         }
@@ -491,6 +493,7 @@ export type Database = {
           imagem_url?: string | null
           imagens?: string[]
           nome?: string
+          notificado_estoque_baixo?: boolean
           preco?: number
           updated_at?: string
         }
