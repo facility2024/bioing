@@ -22,14 +22,14 @@ ARG SUPABASE_PUBLISHABLE_KEY
 
 # Força o preset do Nitro para gerar um servidor Node standalone
 ENV NITRO_PRESET=node-server
+# Fallback: se as variáveis não vierem por build-arg, o Vite lê do .env
+# presente no repositório (copiado no passo anterior).
 RUN set -eu; \
-  export VITE_SUPABASE_URL="${VITE_SUPABASE_URL:-${SUPABASE_URL:-}}"; \
-  export VITE_SUPABASE_PUBLISHABLE_KEY="${VITE_SUPABASE_PUBLISHABLE_KEY:-${SUPABASE_PUBLISHABLE_KEY:-}}"; \
-  export SUPABASE_URL="${SUPABASE_URL:-$VITE_SUPABASE_URL}"; \
-  export SUPABASE_PUBLISHABLE_KEY="${SUPABASE_PUBLISHABLE_KEY:-$VITE_SUPABASE_PUBLISHABLE_KEY}"; \
-  if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then \
-    echo "Erro: configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY no build/deploy antes de publicar."; \
-    exit 1; \
+  if [ -n "${VITE_SUPABASE_URL:-${SUPABASE_URL:-}}" ]; then \
+    export VITE_SUPABASE_URL="${VITE_SUPABASE_URL:-${SUPABASE_URL}}"; \
+  fi; \
+  if [ -n "${VITE_SUPABASE_PUBLISHABLE_KEY:-${SUPABASE_PUBLISHABLE_KEY:-}}" ]; then \
+    export VITE_SUPABASE_PUBLISHABLE_KEY="${VITE_SUPABASE_PUBLISHABLE_KEY:-${SUPABASE_PUBLISHABLE_KEY}}"; \
   fi; \
   bun run build
 
