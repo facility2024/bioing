@@ -175,13 +175,17 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       ? `\n\n📄 *Link do PDF do pedido:*\n${pdfUrl}\n\nClique no link acima para abrir ou baixar o comprovante.`
       : "";
 
-    const mensagemAtendente =
-      `🛒 *Novo pedido ${pedidoNumero ?? ""}*\n\n` +
+    // Bloco com os dados completos do cliente — reutilizado nas duas mensagens
+    const dadosClienteTxt =
       `👤 *Cliente:* ${data.cliente.nome}\n` +
       `📱 *Telefone:* ${data.cliente.telefone}\n` +
       (data.cliente.email ? `✉️ *E-mail:* ${data.cliente.email}\n` : "") +
       (enderecoTxt ? `📍 *Endereço:* ${enderecoTxt}\n` : "") +
-      (data.cliente.observacoes ? `📝 *Obs:* ${data.cliente.observacoes}\n` : "") +
+      (data.cliente.observacoes ? `📝 *Obs:* ${data.cliente.observacoes}\n` : "");
+
+    const mensagemAtendente =
+      `🛒 *Novo pedido ${pedidoNumero ?? ""}*\n\n` +
+      dadosClienteTxt +
       `\n*Itens:*\n${itensTxt}\n\n` +
       `💰 *Total:* ${formatBRL(data.total)}` +
       linhaPdf +
@@ -190,7 +194,9 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
     const mensagemCliente =
       `Olá *${data.cliente.nome}*! 👋\n\n` +
       `Recebemos seu pedido *${pedidoNumero ?? ""}* com sucesso! ✅\n\n` +
-      `*Resumo do pedido:*\n${itensTxt}\n\n` +
+      `*Seus dados:*\n` +
+      dadosClienteTxt +
+      `\n*Resumo do pedido:*\n${itensTxt}\n\n` +
       `💰 *Total:* ${formatBRL(data.total)}` +
       linhaPdf +
       `\n\nUm atendente já está com sua solicitação e vai continuar por aqui mesmo pelo WhatsApp. 🚀` +
@@ -212,12 +218,17 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
           throw new Error(json?.message || json?.error || `HTTP ${res.status}`);
         }
       }
-      try {
-        await enviar(config.numero_conectado, mensagemAtendente);
-        await enviar(data.cliente.telefone, mensagemCliente);
-      } catch (e) {
-        console.error("[checkout] WhatsApp falhou (pedido já salvo):", e);
-      }
+      // Envia as duas mensagens de forma independente: se uma falhar, a outra ainda sai.
+      const resultados = await Promise.allSettled([
+        enviar(config.numero_conectado, mensagemAtendente),
+        enviar(data.cliente.telefone, mensagemCliente),
+      ]);
+      resultados.forEach((r, i) => {
+        if (r.status === "rejected") {
+          const alvo = i === 0 ? "atendente" : "cliente";
+          console.error(`[checkout] WhatsApp (${alvo}) falhou:`, r.reason);
+        }
+      });
     } else {
       console.warn("[checkout] WhatsApp não configurado — pedido salvo sem notificação.");
     }
