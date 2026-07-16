@@ -7,14 +7,17 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, lazy, Suspense, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeApplier, useConfigLoja } from "@/hooks/use-config-loja";
-import { OfferPopup } from "@/components/offer-popup";
+
+const OfferPopup = lazy(() =>
+  import("@/components/offer-popup").then((m) => ({ default: m.OfferPopup })),
+);
 
 
 function NotFoundComponent() {
@@ -145,8 +148,10 @@ function RootComponent() {
         </div>
         <SiteFooter />
       </div>
-      <OfferPopup />
-      
+      <Suspense fallback={null}>
+        <OfferPopup />
+      </Suspense>
+
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );

@@ -22,6 +22,9 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Loja — BioIng" },
       { property: "og:description", content: "Essência Aroma Em Pó Sabor Queijo Parmesão Intenso" },
     ],
+    links: [
+      { rel: "preload", as: "image", href: LOGO_URL, fetchpriority: "high" },
+    ],
   }),
   component: () => (
     <CartProvider>
@@ -48,6 +51,8 @@ function Storefront() {
       if (error) throw error;
       return data as unknown as ProdutoLoja[];
     },
+    staleTime: 2 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   const { data: secoes } = useQuery({
@@ -60,7 +65,8 @@ function Storefront() {
       if (error) throw error;
       return (data ?? []) as { numero: number; titulo: string; ativo: boolean; imagem_url: string | null }[];
     },
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 
   const filtrados = useMemo(() => {
