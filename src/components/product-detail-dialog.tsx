@@ -190,6 +190,7 @@ export function ProductDetailDialog({
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Descrição do produto</DialogTitle>
+            <DialogDescription className="sr-only">Descrição completa do produto</DialogDescription>
           </DialogHeader>
           <div className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
             {produto.descricao}
