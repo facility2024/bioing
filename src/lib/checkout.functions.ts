@@ -121,12 +121,66 @@ export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
       if (errItens) throw new Error(`Erro ao criar itens: ${errItens.message}`);
 
       // Abate estoque dos produtos que controlam estoque
+      const produtosAbatidos: string[] = [];
       for (const it of data.itens) {
         if (!it.id) continue;
         await supabaseAdmin.rpc("abater_estoque", {
           _produto_id: it.id,
           _quantidade: it.quantidade,
         });
+        produtosAbatidos.push(it.id);
+      }
+
+      // Detecta produtos que ficaram com estoque baixo (<=3) e ainda não foram notificados
+      if (produtosAbatidos.length > 0) {
+        const { data: baixos } = await supabaseAdmin
+          .from("produtos")
+          .select("id, nome, estoque")
+          .in("id", produtosAbatidos)
+          .eq("controla_estoque", true)
+          .eq("notificado_estoque_baixo", false)
+          .lte("estoque", 3);
+
+        if (baixos && baixos.length > 0) {
+          const { data: wa } = await supabaseAdmin
+            .from("configuracoes_whatsapp")
+            .select("instance_id, api_token, numero_conectado")
+            .limit(1)
+            .maybeSingle();
+
+          for (const p of baixos) {
+            const msg =
+              `🚨 *Olá, Operador/Admin!*\n\n` +
+              `📦 Passando para avisar que o estoque do produto *${p.nome}* está baixo.\n\n` +
+              `⚠️ Restam apenas *${p.estoque} unidades* em estoque.\n\n` +
+              `👀 Fique atento e providencie a reposição o quanto antes para evitar falta do produto.`;
+
+            if (wa?.instance_id && wa?.api_token && wa?.numero_conectado) {
+              try {
+                const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(wa.instance_id)}`;
+                await fetch(url, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${wa.api_token}`,
+                  },
+                  body: JSON.stringify({
+                    phone: onlyDigits(wa.numero_conectado),
+                    message: msg,
+                    delayMessage: 1,
+                  }),
+                });
+              } catch (e) {
+                console.error("[checkout] Alerta estoque baixo WhatsApp falhou:", e);
+              }
+            }
+
+            await supabaseAdmin
+              .from("produtos")
+              .update({ notificado_estoque_baixo: true })
+              .eq("id", p.id);
+          }
+        }
       }
     } catch (e) {
       console.error("[checkout] Falha ao registrar pedido:", e);
