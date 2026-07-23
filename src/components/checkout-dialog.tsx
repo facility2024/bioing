@@ -202,7 +202,8 @@ export function CheckoutDialog({
           description: `Pedido ${pedido.numero}`,
           payer: {
             email: email.trim(),
-            first_name: nome.trim().split(" ")[0] || undefined,
+            first_name: nome.trim().split(" ")[0] || "Cliente",
+            identification: { type: "CPF", number: cpf.replace(/\D/g, "") },
           },
           payment_method_id: "pix",
           metodo: "pix",
