@@ -48,14 +48,16 @@ export function CheckoutDialog({
 
   const [pedido, setPedido] = useState<{ id: string; numero: string } | null>(null);
   const [pkReady, setPkReady] = useState(false);
+  const [showCardBrick, setShowCardBrick] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [pixData, setPixData] = useState<{ qr_code: string; qr_code_base64: string; ticket_url: string } | null>(null);
 
   const total = subtotal + (freteSel?.preco ?? 0);
 
-  // Inicializa MP quando abrir o passo pagamento
+  // Inicializa o Brick somente quando o cliente escolher cartão/boleto.
+  // O PIX direto não depende do Brick, evitando o erro visual de SVG do SDK.
   useEffect(() => {
-    if (step !== "pagamento" || mpInitialized) return;
+    if (step !== "pagamento" || !showCardBrick || mpInitialized) return;
     (async () => {
       try {
         const { publicKey } = await getPk();
@@ -71,12 +73,12 @@ export function CheckoutDialog({
       }
     })();
     if (mpInitialized) setPkReady(true);
-  }, [step, getPk]);
+  }, [step, showCardBrick, getPk]);
 
   const reset = () => {
     setStep("dados");
     setNome(""); setTelefone(""); setEmail(""); setCpf(""); setRua(""); setNumero(""); setBairro(""); setCidade(""); setEstado(""); setCep(""); setObs("");
-    setOpcoesFrete([]); setFreteSel(null); setPedido(null); setPixData(null);
+    setOpcoesFrete([]); setFreteSel(null); setPedido(null); setPixData(null); setShowCardBrick(false); setPkReady(mpInitialized);
   };
   const handleClose = (v: boolean) => {
     if (!v && step === "sucesso") { clear(); reset(); }
@@ -87,6 +89,7 @@ export function CheckoutDialog({
     e.preventDefault();
     if (!nome.trim()) return toast.error("Informe seu nome");
     if (telefone.replace(/\D/g, "").length < 10) return toast.error("Telefone inválido");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return toast.error("E-mail inválido");
     if (cpf.replace(/\D/g, "").length !== 11) return toast.error("CPF inválido (11 dígitos)");
     if (cep.replace(/\D/g, "").length !== 8) return toast.error("CEP inválido (8 dígitos)");
     if (!rua.trim() || !numero.trim() || !bairro.trim() || !cidade.trim() || !estado.trim()) {
@@ -162,7 +165,8 @@ export function CheckoutDialog({
           description: `Pedido ${pedido.numero}`,
           payer: {
             email: formData?.payer?.email || email || "cliente@sem-email.com",
-            identification: formData?.payer?.identification,
+            first_name: nome.trim().split(" ")[0] || "Cliente",
+            identification: formData?.payer?.identification || { type: "CPF", number: cpf.replace(/\D/g, "") },
           },
           token: formData?.token,
           payment_method_id: formData?.payment_method_id,
@@ -194,6 +198,7 @@ export function CheckoutDialog({
   async function gerarPix() {
     if (!pedido) return;
     setProcessing(true);
+    setShowCardBrick(false);
     try {
       const res = await pagar({
         data: {
@@ -423,7 +428,7 @@ export function CheckoutDialog({
                       Já paguei, finalizar
                     </Button>
                   </div>
-                ) : pkReady ? (
+                ) : (
                   <>
                     <div className="rounded-lg border bg-muted/40 p-3 text-sm">
                       <div className="flex justify-between font-bold"><span>Total</span><span>{formatBRL(total)}</span></div>
@@ -441,31 +446,43 @@ export function CheckoutDialog({
                     <div className="relative py-1 text-center text-xs text-muted-foreground">
                       <span className="bg-background px-2">ou pague com cartão/boleto</span>
                     </div>
-                    <Payment
-                      key={`mp-brick-${pedido?.numero ?? "novo"}`}
-                      initialization={paymentInitialization}
-                      customization={{
-                        paymentMethods: {
-                          creditCard: "all",
-                          debitCard: "all",
-                          bankTransfer: [],
-                          ticket: "all",
-                          maxInstallments: 12,
-                        },
-                        visual: { style: { theme: "default" } },
-                      }}
-                      onSubmit={onPaymentSubmit}
-                      onError={(err: any) => toast.error("Erro: " + (err?.message || "pagamento"))}
-                    />
+                    {!showCardBrick ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setShowCardBrick(true)}
+                        disabled={processing}
+                      >
+                        Pagar com cartão ou boleto
+                      </Button>
+                    ) : pkReady ? (
+                      <Payment
+                        key={`mp-brick-${pedido?.numero ?? "novo"}`}
+                        initialization={paymentInitialization}
+                        customization={{
+                          paymentMethods: {
+                            creditCard: "all",
+                            debitCard: "all",
+                            bankTransfer: [],
+                            ticket: "all",
+                            maxInstallments: 12,
+                          },
+                          visual: { style: { theme: "default" } },
+                        }}
+                        onSubmit={onPaymentSubmit}
+                        onError={(err: any) => toast.error("Erro: " + (err?.message || "pagamento"))}
+                      />
+                    ) : (
+                      <div className="py-6 text-center text-muted-foreground">
+                        <Loader2 className="mx-auto h-6 w-6 animate-spin mb-2" />
+                        Carregando cartão/boleto…
+                      </div>
+                    )}
                     <Button variant="ghost" size="sm" onClick={() => setStep("frete")} disabled={processing}>
                       <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
                     </Button>
                   </>
-                ) : (
-                  <div className="py-8 text-center text-muted-foreground">
-                    <Loader2 className="mx-auto h-6 w-6 animate-spin mb-2" />
-                    Carregando pagamento…
-                  </div>
                 )}
               </div>
             )}

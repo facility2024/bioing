@@ -26,10 +26,19 @@ function validate(i: unknown): CriarPagInput {
   const inp = i as CriarPagInput;
   if (!inp.pedido_id) throw new Error("Pedido obrigatório");
   if (!(inp.transaction_amount > 0)) throw new Error("Valor inválido");
-  if (!inp.payer?.email) throw new Error("E-mail obrigatório");
+  if (!inp.payer?.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inp.payer.email.trim())) {
+    throw new Error("E-mail obrigatório para o pagamento");
+  }
+  if (inp.metodo !== "card" && onlyDigits(inp.payer.identification?.number || "").length !== 11) {
+    throw new Error("CPF obrigatório para PIX/boleto");
+  }
   if (inp.metodo === "card" && (!inp.token || !inp.payment_method_id))
     throw new Error("Dados do cartão incompletos");
   return inp;
+}
+
+function onlyDigits(s: string) {
+  return (s || "").replace(/\D/g, "");
 }
 
 export const criarPagamentoMP = createServerFn({ method: "POST" })
@@ -40,11 +49,22 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    const payer: any = {
+      email: data.payer.email.trim(),
+      first_name: data.payer.first_name || "Cliente",
+    };
+    if (data.payer.identification?.number) {
+      payer.identification = {
+        type: data.payer.identification.type || "CPF",
+        number: onlyDigits(data.payer.identification.number),
+      };
+    }
+
     const body: any = {
       transaction_amount: Number(data.transaction_amount.toFixed(2)),
       description: data.description,
       external_reference: data.pedido_id,
-      payer: data.payer,
+      payer,
       notification_url: data.origin ? `${data.origin.replace(/\/+$/, "")}/api/public/mp-webhook` : undefined,
     };
 
@@ -74,7 +94,8 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
     const json: any = await res.json().catch(() => ({}));
     if (!res.ok) {
       console.error("[MP] erro", res.status, json);
-      throw new Error(json?.message || `Falha no pagamento (${res.status})`);
+      const cause = Array.isArray(json?.cause) && json.cause.length ? json.cause[0] : null;
+      throw new Error(cause?.description || json?.message || `Falha no pagamento (${res.status})`);
     }
 
     // Persiste no pedido
