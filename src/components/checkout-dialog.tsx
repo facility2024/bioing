@@ -34,8 +34,11 @@ export function CheckoutDialog({
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
-  const [endereco, setEndereco] = useState("");
+  const [rua, setRua] = useState("");
+  const [numero, setNumero] = useState("");
+  const [bairro, setBairro] = useState("");
   const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("");
   const [cep, setCep] = useState("");
   const [obs, setObs] = useState("");
 
@@ -72,7 +75,7 @@ export function CheckoutDialog({
 
   const reset = () => {
     setStep("dados");
-    setNome(""); setTelefone(""); setEmail(""); setEndereco(""); setCidade(""); setCep(""); setObs("");
+    setNome(""); setTelefone(""); setEmail(""); setRua(""); setNumero(""); setBairro(""); setCidade(""); setEstado(""); setCep(""); setObs("");
     setOpcoesFrete([]); setFreteSel(null); setPedido(null); setPixData(null);
   };
   const handleClose = (v: boolean) => {
@@ -85,7 +88,9 @@ export function CheckoutDialog({
     if (!nome.trim()) return toast.error("Informe seu nome");
     if (telefone.replace(/\D/g, "").length < 10) return toast.error("Telefone inválido");
     if (cep.replace(/\D/g, "").length !== 8) return toast.error("CEP inválido (8 dígitos)");
-    if (!endereco.trim() || !cidade.trim()) return toast.error("Preencha endereço e cidade");
+    if (!rua.trim() || !numero.trim() || !bairro.trim() || !cidade.trim() || !estado.trim()) {
+      return toast.error("Preencha rua, número, bairro, cidade e estado");
+    }
     setLoadingFrete(true);
     try {
       const ops = await calcFrete({
@@ -116,8 +121,8 @@ export function CheckoutDialog({
             nome: nome.trim(),
             telefone: telefone.trim(),
             email: email.trim() || undefined,
-            endereco: endereco.trim(),
-            cidade: cidade.trim(),
+            endereco: `${rua.trim()}, nº ${numero.trim()} - ${bairro.trim()}`,
+            cidade: `${cidade.trim()}/${estado.trim().toUpperCase()}`,
             cep: cep.trim(),
             observacoes: obs.trim() || undefined,
           },
@@ -238,22 +243,38 @@ export function CheckoutDialog({
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label>Endereço *</Label>
-                  <Input placeholder="Rua, número, bairro" value={endereco} onChange={(e) => setEndereco(e.target.value)} required />
+                  <Label>Rua *</Label>
+                  <Input placeholder="Nome da rua" value={rua} onChange={(e) => setRua(e.target.value)} required />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label>Cidade / UF *</Label>
+                    <Label>Número *</Label>
+                    <Input placeholder="Ex: 11" value={numero} onChange={(e) => setNumero(e.target.value)} required />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Bairro *</Label>
+                    <Input placeholder="Seu bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} required />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>Cidade *</Label>
                     <Input value={cidade} onChange={(e) => setCidade(e.target.value)} required />
                   </div>
+                  <div className="space-y-1">
+                    <Label>Estado *</Label>
+                    <Input placeholder="SP" maxLength={2} value={estado} onChange={(e) => setEstado(e.target.value.toUpperCase())} required />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label>CEP *</Label>
                     <Input placeholder="00000-000" value={cep} onChange={(e) => setCep(e.target.value)} required />
                   </div>
-                </div>
-                <div className="space-y-1">
-                  <Label>Observações</Label>
-                  <Textarea rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
+                  <div className="space-y-1">
+                    <Label>Complemento</Label>
+                    <Input placeholder="Apto, bloco, referência" value={obs} onChange={(e) => setObs(e.target.value)} />
+                  </div>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border bg-muted/40 p-3">
                   <span className="text-sm text-muted-foreground">Subtotal</span>
