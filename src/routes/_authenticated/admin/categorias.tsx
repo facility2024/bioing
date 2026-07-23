@@ -231,6 +231,7 @@ function CategoriasAdmin() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{form.id ? "Editar categoria" : "Nova categoria"}</DialogTitle>
+            <DialogDescription className="sr-only">Formulário de categoria</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
