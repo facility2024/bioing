@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Boxes, Pencil, Search, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
@@ -165,6 +166,7 @@ function EstoqueAdmin() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar estoque</DialogTitle>
+            <DialogDescription className="sr-only">Ajuste manual de estoque do produto</DialogDescription>
           </DialogHeader>
           {editando && (
             <div className="space-y-4">

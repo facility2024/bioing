@@ -33,6 +33,7 @@ export function CheckoutDialog({
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
+  const [cpf, setCpf] = useState("");
   const [rua, setRua] = useState("");
   const [numero, setNumero] = useState("");
   const [bairro, setBairro] = useState("");
@@ -74,7 +75,7 @@ export function CheckoutDialog({
 
   const reset = () => {
     setStep("dados");
-    setNome(""); setTelefone(""); setEmail(""); setRua(""); setNumero(""); setBairro(""); setCidade(""); setEstado(""); setCep(""); setObs("");
+    setNome(""); setTelefone(""); setEmail(""); setCpf(""); setRua(""); setNumero(""); setBairro(""); setCidade(""); setEstado(""); setCep(""); setObs("");
     setOpcoesFrete([]); setFreteSel(null); setPedido(null); setPixData(null);
   };
   const handleClose = (v: boolean) => {
@@ -86,6 +87,7 @@ export function CheckoutDialog({
     e.preventDefault();
     if (!nome.trim()) return toast.error("Informe seu nome");
     if (telefone.replace(/\D/g, "").length < 10) return toast.error("Telefone inválido");
+    if (cpf.replace(/\D/g, "").length !== 11) return toast.error("CPF inválido (11 dígitos)");
     if (cep.replace(/\D/g, "").length !== 8) return toast.error("CEP inválido (8 dígitos)");
     if (!rua.trim() || !numero.trim() || !bairro.trim() || !cidade.trim() || !estado.trim()) {
       return toast.error("Preencha rua, número, bairro, cidade e estado");
@@ -200,7 +202,8 @@ export function CheckoutDialog({
           description: `Pedido ${pedido.numero}`,
           payer: {
             email: email.trim(),
-            first_name: nome.trim().split(" ")[0] || undefined,
+            first_name: nome.trim().split(" ")[0] || "Cliente",
+            identification: { type: "CPF", number: cpf.replace(/\D/g, "") },
           },
           payment_method_id: "pix",
           metodo: "pix",
@@ -283,6 +286,10 @@ export function CheckoutDialog({
                     <Label>E-mail *</Label>
                     <Input type="email" maxLength={255} value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
+                </div>
+                <div className="space-y-1">
+                  <Label>CPF * (necessário para PIX/boleto)</Label>
+                  <Input placeholder="Somente números" maxLength={14} value={cpf} onChange={(e) => setCpf(e.target.value)} required />
                 </div>
                 <div className="space-y-1">
                   <Label>Rua *</Label>

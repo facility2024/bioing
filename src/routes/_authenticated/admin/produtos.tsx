@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -258,6 +259,7 @@ function ProdutosAdmin() {
         <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{form.id ? "Editar produto" : "Novo produto"}</DialogTitle>
+            <DialogDescription className="sr-only">Formulário de cadastro/edição de produto</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
