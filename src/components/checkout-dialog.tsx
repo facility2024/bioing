@@ -191,7 +191,7 @@ export function CheckoutDialog({
 
   const paymentInitialization = useMemo(
     () => ({
-      amount: total,
+      amount: Number.isFinite(total) && total > 0 ? Number(total.toFixed(2)) : 0.01,
       payer: {
         email: email || undefined,
         entityType: "individual" as const,
@@ -199,6 +199,7 @@ export function CheckoutDialog({
     }),
     [total, email]
   );
+
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
