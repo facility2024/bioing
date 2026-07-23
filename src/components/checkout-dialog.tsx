@@ -288,6 +288,10 @@ export function CheckoutDialog({
                   </div>
                 </div>
                 <div className="space-y-1">
+                  <Label>CPF * (necessário para PIX/boleto)</Label>
+                  <Input placeholder="Somente números" maxLength={14} value={cpf} onChange={(e) => setCpf(e.target.value)} required />
+                </div>
+                <div className="space-y-1">
                   <Label>Rua *</Label>
                   <Input placeholder="Nome da rua" maxLength={120} value={rua} onChange={(e) => setRua(e.target.value)} required />
                 </div>
