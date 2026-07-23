@@ -21,6 +21,13 @@ type CriarPagInput = {
   origin?: string;
 };
 
+type MercadoPagoError = {
+  message?: string;
+  error?: string;
+  status?: number;
+  cause?: Array<{ code?: string | number; description?: string }>;
+};
+
 function validate(i: unknown): CriarPagInput {
   if (!i || typeof i !== "object") throw new Error("Dados inválidos");
   const inp = i as CriarPagInput;
@@ -41,6 +48,27 @@ function onlyDigits(s: string) {
   return (s || "").replace(/\D/g, "");
 }
 
+function stripAccents(s: string) {
+  return (s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z\s'-]/g, "")
+    .trim();
+}
+
+function normalizeAmount(value: number) {
+  return Number(Number(value || 0).toFixed(2));
+}
+
+function getMpErrorMessage(json: MercadoPagoError, fallbackStatus: number) {
+  const cause = Array.isArray(json?.cause) && json.cause.length ? json.cause[0] : null;
+  return cause?.description || json?.message || json?.error || `Falha no pagamento (${fallbackStatus})`;
+}
+
+function isFinancialIdentityError(message: string) {
+  return /financial identity/i.test(message);
+}
+
 export const criarPagamentoMP = createServerFn({ method: "POST" })
   .validator((i: unknown) => validate(i))
   .handler(async ({ data }) => {
@@ -49,29 +77,35 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const stripAccents = (s: string) =>
-      (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z\s'-]/g, "").trim();
-    const firstName = stripAccents(data.payer.first_name || "Cliente") || "Cliente";
-    const lastName = stripAccents(data.payer.last_name || "") || "Silva";
+    const amount = normalizeAmount(data.transaction_amount);
+    const email = data.payer.email.trim().toLowerCase();
+    const documentNumber = onlyDigits(data.payer.identification?.number || "");
+    const notificationUrl = data.origin ? `${data.origin.replace(/\/+$/, "")}/api/public/mp-webhook` : undefined;
+    const firstName = stripAccents(data.payer.first_name || "");
+    const lastName = stripAccents(data.payer.last_name || "");
 
     const payer: any = {
-      email: data.payer.email.trim().toLowerCase(),
-      first_name: firstName,
-      last_name: lastName,
+      email,
     };
+    // Para PIX/boleto o Mercado Pago pode rejeitar quando nome/sobrenome não batem
+    // com o CPF ("Financial Identity"). Enviamos o formato oficial mínimo: e-mail + CPF.
+    if (data.metodo === "card") {
+      payer.first_name = firstName || "Cliente";
+      payer.last_name = lastName || "Silva";
+    }
     if (data.payer.identification?.number) {
       payer.identification = {
         type: data.payer.identification.type || "CPF",
-        number: onlyDigits(data.payer.identification.number),
+        number: documentNumber,
       };
     }
 
     const body: any = {
-      transaction_amount: Number(data.transaction_amount.toFixed(2)),
+      transaction_amount: amount,
       description: data.description,
       external_reference: data.pedido_id,
       payer,
-      notification_url: data.origin ? `${data.origin.replace(/\/+$/, "")}/api/public/mp-webhook` : undefined,
+      notification_url: notificationUrl,
     };
 
     if (data.metodo === "card") {
@@ -86,22 +120,89 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
       body.payment_method_id = "bolbradesco";
     }
 
-    const idem = crypto.randomUUID();
-    const res = await fetch(`${MP_BASE}/v1/payments`, {
+    const createPayment = async (payload: any) => fetch(`${MP_BASE}/v1/payments`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
-        "X-Idempotency-Key": idem,
+        "X-Idempotency-Key": crypto.randomUUID(),
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     });
+
+    const createPreferenceFallback = async () => {
+      const prefBody: any = {
+        items: [
+          {
+            title: data.description || "Pedido",
+            quantity: 1,
+            currency_id: "BRL",
+            unit_price: amount,
+          },
+        ],
+        payer: { email },
+        external_reference: data.pedido_id,
+        notification_url: notificationUrl,
+        payment_methods: {
+          excluded_payment_types: [
+            { id: "credit_card" },
+            { id: "debit_card" },
+            { id: "ticket" },
+          ],
+          installments: 1,
+        },
+      };
+      if (data.origin) {
+        const base = data.origin.replace(/\/+$/, "");
+        prefBody.back_urls = {
+          success: `${base}/`,
+          failure: `${base}/`,
+          pending: `${base}/`,
+        };
+      }
+
+      const prefRes = await fetch(`${MP_BASE}/checkout/preferences`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(prefBody),
+      });
+      const prefJson: any = await prefRes.json().catch(() => ({}));
+      if (!prefRes.ok) {
+        console.error("[MP] fallback preference erro", prefRes.status, prefJson);
+        throw new Error(getMpErrorMessage(prefJson, prefRes.status));
+      }
+
+      await supabaseAdmin
+        .from("pedidos")
+        .update({
+          mp_preference_id: prefJson.id ? String(prefJson.id) : null,
+          pagamento_status: "pendente",
+          pagamento_metodo: "pix",
+        })
+        .eq("id", data.pedido_id);
+
+      return {
+        status: "pending",
+        status_detail: "checkout_link",
+        id: prefJson.id ? String(prefJson.id) : "",
+        pix: null,
+        checkout_url: (prefJson.init_point || prefJson.sandbox_init_point || "") as string,
+      };
+    };
+
+    const res = await createPayment(body);
 
     const json: any = await res.json().catch(() => ({}));
     if (!res.ok) {
       console.error("[MP] erro", res.status, json);
-      const cause = Array.isArray(json?.cause) && json.cause.length ? json.cause[0] : null;
-      throw new Error(cause?.description || json?.message || `Falha no pagamento (${res.status})`);
+      const message = getMpErrorMessage(json, res.status);
+      if (data.metodo === "pix" && isFinancialIdentityError(message)) {
+        return createPreferenceFallback();
+      }
+      throw new Error(message);
     }
 
     // Persiste no pedido
@@ -134,5 +235,6 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
               ticket_url: json.point_of_interaction.transaction_data.ticket_url as string,
             }
           : null,
+      checkout_url: null,
     };
   });
