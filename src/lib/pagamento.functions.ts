@@ -45,7 +45,7 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
       description: data.description,
       external_reference: data.pedido_id,
       payer: data.payer,
-      notification_url: undefined,
+      notification_url: data.origin ? `${data.origin.replace(/\/+$/, "")}/api/public/mp-webhook` : undefined,
     };
 
     if (data.metodo === "card") {
