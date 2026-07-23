@@ -1,11 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 
-type ItemPayload = {
-  id?: string;
-  nome: string;
-  preco: number;
-  quantidade: number;
-};
+type ItemPayload = { id?: string; nome: string; preco: number; quantidade: number };
 
 type CheckoutInput = {
   cliente: {
@@ -18,319 +13,100 @@ type CheckoutInput = {
     observacoes?: string;
   };
   itens: ItemPayload[];
+  subtotal: number;
+  frete: { valor: number; servico?: string; prazo_dias?: number };
   total: number;
-  origin?: string;
 };
-
-const WAPI_BASE = "https://api.w-api.app/v1";
 
 function onlyDigits(s: string) {
   return (s || "").replace(/\D/g, "");
-}
-
-function whatsappPhoneCandidates(phone: string) {
-  const digits = onlyDigits(phone);
-  const candidates: string[] = [];
-
-  // A W-API pode retornar o número conectado sem o 9º dígito em celulares BR.
-  // Para envio, tenta primeiro o formato atual: 55 + DDD + 9 + número.
-  if (digits.startsWith("55") && digits.length === 12) {
-    candidates.push(`${digits.slice(0, 4)}9${digits.slice(4)}`);
-  }
-
-  if (digits.length >= 10) candidates.push(digits);
-  return [...new Set(candidates)];
-}
-
-function formatBRL(n: number) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function validate(input: unknown): CheckoutInput {
   if (!input || typeof input !== "object") throw new Error("Dados inválidos");
   const i = input as CheckoutInput;
   if (!i.cliente?.nome?.trim()) throw new Error("Informe seu nome");
-  if (onlyDigits(i.cliente?.telefone || "").length < 10) throw new Error("Telefone inválido (com DDD)");
+  if (onlyDigits(i.cliente?.telefone || "").length < 10) throw new Error("Telefone inválido");
   if (!Array.isArray(i.itens) || i.itens.length === 0) throw new Error("Carrinho vazio");
+  if (!(i.total > 0)) throw new Error("Total inválido");
   return i;
 }
 
-export const finalizarPedidoWhatsapp = createServerFn({ method: "POST" })
-  .validator((input: unknown) => validate(input))
+/**
+ * Cria o pedido em status 'pendente' de pagamento. Não envia WhatsApp nem abate estoque.
+ * Retorna { pedido_id, numero } para uso pelo checkout de pagamento.
+ */
+export const criarPedidoPendente = createServerFn({ method: "POST" })
+  .validator((i: unknown) => validate(i))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const itensTxt = data.itens
-      .map((it) => `• ${it.quantidade}x ${it.nome} — ${formatBRL(it.preco * it.quantidade)}`)
-      .join("\n");
+    const telDigits = onlyDigits(data.cliente.telefone);
+
+    // cliente
+    const { data: existente } = await supabaseAdmin
+      .from("clientes")
+      .select("id")
+      .eq("whatsapp", telDigits)
+      .maybeSingle();
+    let clienteId = existente?.id as string | undefined;
+    if (clienteId) {
+      await supabaseAdmin
+        .from("clientes")
+        .update({ nome: data.cliente.nome, email: data.cliente.email ?? null })
+        .eq("id", clienteId);
+    } else {
+      const { data: novo, error } = await supabaseAdmin
+        .from("clientes")
+        .insert({
+          nome: data.cliente.nome,
+          whatsapp: telDigits,
+          email: data.cliente.email ?? null,
+        })
+        .select("id")
+        .single();
+      if (error) throw new Error(`Erro ao criar cliente: ${error.message}`);
+      clienteId = novo!.id;
+    }
 
     const enderecoTxt = [data.cliente.endereco, data.cliente.cidade, data.cliente.cep]
       .filter(Boolean)
       .join(" - ");
+    const observacoes =
+      [
+        enderecoTxt ? `Endereço: ${enderecoTxt}` : null,
+        data.cliente.observacoes ? `Obs: ${data.cliente.observacoes}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ") || null;
 
-    // ============ 1) PERSISTIR CLIENTE + PEDIDO + ITENS (SEMPRE) ============
-    const telDigits = onlyDigits(data.cliente.telefone);
-    let pedidoNumero: string | null = null;
-    let baixosParaAlertar: Array<{ id: string; nome: string; estoque: number }> = [];
+    const { data: pedido, error: errPed } = await supabaseAdmin
+      .from("pedidos")
+      .insert({
+        cliente_id: clienteId!,
+        subtotal: data.subtotal,
+        total: data.total,
+        status: "aguardando_pagamento",
+        pagamento_status: "pendente",
+        frete_valor: data.frete.valor,
+        frete_servico: data.frete.servico ?? null,
+        frete_prazo_dias: data.frete.prazo_dias ?? null,
+        observacoes,
+      })
+      .select("id, numero")
+      .single();
+    if (errPed) throw new Error(`Erro ao criar pedido: ${errPed.message}`);
 
-    try {
-      const { data: existente, error: errBusca } = await supabaseAdmin
-        .from("clientes")
-        .select("id")
-        .eq("whatsapp", telDigits)
-        .maybeSingle();
-      if (errBusca) throw new Error(`Erro ao buscar cliente: ${errBusca.message}`);
+    const itensPayload = data.itens.map((it) => ({
+      pedido_id: pedido!.id,
+      produto_id: it.id ?? null,
+      produto_nome: it.nome,
+      quantidade: it.quantidade,
+      valor_unitario: it.preco,
+      valor_total: it.preco * it.quantidade,
+    }));
+    const { error: errItens } = await supabaseAdmin.from("itens_pedido").insert(itensPayload);
+    if (errItens) throw new Error(`Erro ao criar itens: ${errItens.message}`);
 
-      let clienteId = existente?.id as string | undefined;
-      if (clienteId) {
-        const { error: errUp } = await supabaseAdmin
-          .from("clientes")
-          .update({ nome: data.cliente.nome, email: data.cliente.email ?? null })
-          .eq("id", clienteId);
-        if (errUp) throw new Error(`Erro ao atualizar cliente: ${errUp.message}`);
-      } else {
-        const { data: novo, error: errCli } = await supabaseAdmin
-          .from("clientes")
-          .insert({
-            nome: data.cliente.nome,
-            whatsapp: telDigits,
-            email: data.cliente.email ?? null,
-          })
-          .select("id")
-          .single();
-        if (errCli) throw new Error(`Erro ao criar cliente: ${errCli.message}`);
-        clienteId = novo!.id;
-      }
-
-      const observacoes =
-        [
-          enderecoTxt ? `Endereço: ${enderecoTxt}` : null,
-          data.cliente.observacoes ? `Obs: ${data.cliente.observacoes}` : null,
-        ]
-          .filter(Boolean)
-          .join(" | ") || null;
-
-      const { data: pedido, error: errPed } = await supabaseAdmin
-        .from("pedidos")
-        .insert({
-          cliente_id: clienteId!,
-          subtotal: data.total,
-          total: data.total,
-          status: "novo",
-          observacoes,
-        })
-        .select("id, numero")
-        .single();
-      if (errPed) throw new Error(`Erro ao criar pedido: ${errPed.message}`);
-      pedidoNumero = pedido!.numero as string;
-
-      const itensPayload = data.itens.map((it) => ({
-        pedido_id: pedido!.id,
-        produto_id: it.id ?? null,
-        produto_nome: it.nome,
-        quantidade: it.quantidade,
-        valor_unitario: it.preco,
-        valor_total: it.preco * it.quantidade,
-      }));
-      const { error: errItens } = await supabaseAdmin.from("itens_pedido").insert(itensPayload);
-      if (errItens) throw new Error(`Erro ao criar itens: ${errItens.message}`);
-
-      // Abate estoque dos produtos que controlam estoque
-      const produtosAbatidos: string[] = [];
-      for (const it of data.itens) {
-        if (!it.id) continue;
-        await supabaseAdmin.rpc("abater_estoque", {
-          _produto_id: it.id,
-          _quantidade: it.quantidade,
-        });
-        produtosAbatidos.push(it.id);
-      }
-
-      // Detecta produtos com estoque baixo (<=3) — envio do alerta é feito depois do cupom.
-      if (produtosAbatidos.length > 0) {
-        const { data: baixos } = await supabaseAdmin
-          .from("produtos")
-          .select("id, nome, estoque")
-          .in("id", produtosAbatidos)
-          .eq("controla_estoque", true)
-          .eq("ativo", true)
-          .eq("notificado_estoque_baixo", false)
-          .lte("estoque", 3);
-        if (baixos && baixos.length > 0) {
-          baixosParaAlertar = baixos as any;
-        }
-      }
-    } catch (e) {
-      console.error("[checkout] Falha ao registrar pedido:", e);
-      throw new Error(
-        e instanceof Error ? e.message : "Não foi possível registrar seu pedido. Tente novamente."
-      );
-    }
-
-    // ============ 2) GERAR PDF DO PEDIDO (link substitui o cupom) ============
-    let pdfUrl: string | null = null;
-    if (pedidoNumero) {
-      try {
-        const { gerarESalvarPedidoPdf } = await import("@/lib/pedido-pdf.server");
-        const signedUrl = await gerarESalvarPedidoPdf({
-          numero: pedidoNumero,
-          cliente: data.cliente,
-          itens: data.itens,
-          total: data.total,
-        });
-        if (signedUrl) {
-          const origin = (data.origin || "").replace(/\/+$/, "");
-          pdfUrl = origin
-            ? `${origin}/api/public/pedido/${encodeURIComponent(pedidoNumero)}.pdf`
-            : signedUrl;
-        }
-      } catch (e) {
-        console.error("[checkout] Falha ao gerar PDF (não bloqueia pedido):", e);
-      }
-    }
-
-    // ============ 3) TENTAR ENVIAR WHATSAPP (não bloqueia o pedido) ============
-    const { data: config } = await supabaseAdmin
-      .from("configuracoes_whatsapp")
-      .select("instance_id, api_token, numero_conectado, ativa")
-      .limit(1)
-      .maybeSingle();
-
-    const rodapeEmpresa =
-      `\n\n━━━━━━━━━━━━━━━\n` +
-      `*BIOCON DO BRASIL PRODUTOS E SERVICOS LTDA - ME*\n` +
-      `CNPJ: 51.909.772/0001-81\n` +
-      `Endereço: R. São Bartolomeu, 785 - Vila San Martin, Sumaré - SP, 13180-310\n` +
-      `✉️ *E-mail:* vendas@biocondobrasil.com.br`;
-
-    const linhaPdf = pdfUrl
-      ? `\n\n📄 *Link do PDF do pedido:*\n${pdfUrl}\n\nClique no link acima para abrir ou baixar o comprovante.`
-      : "";
-
-    // Bloco com os dados completos do cliente — reutilizado nas duas mensagens
-    const dadosClienteTxt =
-      `👤 *Cliente:* ${data.cliente.nome}\n` +
-      `📱 *Telefone:* ${data.cliente.telefone}\n` +
-      (data.cliente.email ? `✉️ *E-mail:* ${data.cliente.email}\n` : "") +
-      (enderecoTxt ? `📍 *Endereço:* ${enderecoTxt}\n` : "") +
-      (data.cliente.observacoes ? `📝 *Obs:* ${data.cliente.observacoes}\n` : "");
-
-    const mensagemAtendente =
-      `🛒 *Novo pedido ${pedidoNumero ?? ""}*\n\n` +
-      dadosClienteTxt +
-      `\n*Itens:*\n${itensTxt}\n\n` +
-      `💰 *Total:* ${formatBRL(data.total)}` +
-      linhaPdf +
-      rodapeEmpresa;
-
-    const mensagemCliente =
-      `Olá *${data.cliente.nome}*! 👋\n\n` +
-      `Recebemos seu pedido *${pedidoNumero ?? ""}* com sucesso! ✅\n\n` +
-      `*Seus dados:*\n` +
-      dadosClienteTxt +
-      `\n*Resumo do pedido:*\n${itensTxt}\n\n` +
-      `💰 *Total:* ${formatBRL(data.total)}` +
-      linhaPdf +
-      `\n\nUm atendente já está com sua solicitação e vai continuar por aqui mesmo pelo WhatsApp. 🚀` +
-      rodapeEmpresa;
-
-    if (config?.instance_id && config?.api_token && config?.numero_conectado) {
-      async function enviar(phone: string, message: string) {
-        const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(config!.instance_id!)}`;
-        const res = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${config!.api_token!}`,
-          },
-          body: JSON.stringify({ phone: onlyDigits(phone), message, delayMessage: 1 }),
-        });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok || json?.error) {
-          throw new Error(json?.message || json?.error || `HTTP ${res.status}`);
-        }
-      }
-
-      // Aguarda 8s antes de enviar o cupom (evita disparos simultâneos).
-      await sleep(8000);
-
-      // Envia as duas mensagens de forma independente: se uma falhar, a outra ainda sai.
-      const resultados = await Promise.allSettled([
-        enviar(config.numero_conectado, mensagemAtendente),
-        enviar(data.cliente.telefone, mensagemCliente),
-      ]);
-      resultados.forEach((r, i) => {
-        if (r.status === "rejected") {
-          const alvo = i === 0 ? "atendente" : "cliente";
-          console.error(`[checkout] WhatsApp (${alvo}) falhou:`, r.reason);
-        }
-      });
-
-      // Aguarda 15s após o cupom antes de disparar o alerta de estoque baixo.
-      if (baixosParaAlertar.length > 0) {
-        await sleep(15000);
-
-        const { data: wa } = await supabaseAdmin
-          .from("configuracoes_whatsapp")
-          .select("instance_id, api_token, numero_conectado, numero_alerta_estoque, ativa")
-          .limit(1)
-          .maybeSingle();
-
-        const numeroAlertaDestino =
-          (wa as any)?.numero_alerta_estoque || wa?.numero_conectado;
-        const waPronto =
-          !!wa?.instance_id && !!wa?.api_token && !!numeroAlertaDestino && !!wa?.ativa;
-
-        if (!waPronto) {
-          console.warn("[checkout] Estoque baixo detectado, mas WhatsApp não está configurado/ativo.");
-        } else {
-          for (const p of baixosParaAlertar) {
-            let enviado = false;
-            const msg =
-              `🚨 *Olá, Operador/Admin!*\n\n` +
-              `📦 Passando para avisar que o estoque do produto *${p.nome}* está baixo.\n\n` +
-              `⚠️ Restam apenas *${p.estoque} unidades* em estoque.\n\n` +
-              `👀 Fique atento e providencie a reposição o quanto antes para evitar falta do produto.`;
-            try {
-              for (const phone of whatsappPhoneCandidates(numeroAlertaDestino!)) {
-                const url = `${WAPI_BASE}/message/send-text?instanceId=${encodeURIComponent(wa!.instance_id!)}`;
-                const res = await fetch(url, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${wa!.api_token!}`,
-                  },
-                  body: JSON.stringify({ phone, message: msg, delayMessage: 1 }),
-                });
-                const json = await res.json().catch(() => ({}));
-                if (!res.ok || (json as any)?.error) {
-                  console.error("[checkout] W-API erro no alerta estoque:", res.status, phone, json);
-                  continue;
-                }
-                console.log("[checkout] Alerta de estoque baixo enviado", { produto: p.nome, phone });
-                enviado = true;
-                break;
-              }
-            } catch (e) {
-              console.error("[checkout] Alerta estoque baixo WhatsApp falhou:", e);
-            }
-            if (enviado) {
-              await supabaseAdmin
-                .from("produtos")
-                .update({ notificado_estoque_baixo: true })
-                .eq("id", p.id);
-            }
-          }
-        }
-      }
-    } else {
-      console.warn("[checkout] WhatsApp não configurado — pedido salvo sem notificação.");
-    }
-
-    return { ok: true, numero: pedidoNumero, pdfUrl };
+    return { pedido_id: pedido!.id as string, numero: pedido!.numero as string };
   });
-

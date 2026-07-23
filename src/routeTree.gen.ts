@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 import { Route as AuthenticatedAdminSlidesRouteImport } from './routes/_authenticated/admin/slides'
 import { Route as AuthenticatedAdminProdutosRouteImport } from './routes/_authenticated/admin/produtos'
 import { Route as AuthenticatedAdminPedidosRouteImport } from './routes/_authenticated/admin/pedidos'
@@ -52,6 +53,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
+const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
+  id: '/api/public/mp-webhook',
+  path: '/api/public/mp-webhook',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminSlidesRoute =
   AuthenticatedAdminSlidesRouteImport.update({
@@ -153,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/admin/pedidos': typeof AuthenticatedAdminPedidosRoute
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
   '/admin/slides': typeof AuthenticatedAdminSlidesRoute
+  '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/cron/cleanup-pedidos-pdf': typeof ApiPublicCronCleanupPedidosPdfRoute
   '/api/public/pedido/$numero': typeof ApiPublicPedidoNumeroRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/admin/pedidos': typeof AuthenticatedAdminPedidosRoute
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
   '/admin/slides': typeof AuthenticatedAdminSlidesRoute
+  '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/public/cron/cleanup-pedidos-pdf': typeof ApiPublicCronCleanupPedidosPdfRoute
   '/api/public/pedido/$numero': typeof ApiPublicPedidoNumeroRoute
@@ -194,6 +202,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/pedidos': typeof AuthenticatedAdminPedidosRoute
   '/_authenticated/admin/produtos': typeof AuthenticatedAdminProdutosRoute
   '/_authenticated/admin/slides': typeof AuthenticatedAdminSlidesRoute
+  '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/cron/cleanup-pedidos-pdf': typeof ApiPublicCronCleanupPedidosPdfRoute
   '/api/public/pedido/$numero': typeof ApiPublicPedidoNumeroRoute
@@ -216,6 +225,7 @@ export interface FileRouteTypes {
     | '/admin/pedidos'
     | '/admin/produtos'
     | '/admin/slides'
+    | '/api/public/mp-webhook'
     | '/admin/'
     | '/api/public/cron/cleanup-pedidos-pdf'
     | '/api/public/pedido/$numero'
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
     | '/admin/pedidos'
     | '/admin/produtos'
     | '/admin/slides'
+    | '/api/public/mp-webhook'
     | '/admin'
     | '/api/public/cron/cleanup-pedidos-pdf'
     | '/api/public/pedido/$numero'
@@ -256,6 +267,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/pedidos'
     | '/_authenticated/admin/produtos'
     | '/_authenticated/admin/slides'
+    | '/api/public/mp-webhook'
     | '/_authenticated/admin/'
     | '/api/public/cron/cleanup-pedidos-pdf'
     | '/api/public/pedido/$numero'
@@ -265,6 +277,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   ApiPublicCronCleanupPedidosPdfRoute: typeof ApiPublicCronCleanupPedidosPdfRoute
   ApiPublicPedidoNumeroRoute: typeof ApiPublicPedidoNumeroRoute
 }
@@ -305,6 +318,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/api/public/mp-webhook': {
+      id: '/api/public/mp-webhook'
+      path: '/api/public/mp-webhook'
+      fullPath: '/api/public/mp-webhook'
+      preLoaderRoute: typeof ApiPublicMpWebhookRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/slides': {
       id: '/_authenticated/admin/slides'
@@ -463,6 +483,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   ApiPublicCronCleanupPedidosPdfRoute: ApiPublicCronCleanupPedidosPdfRoute,
   ApiPublicPedidoNumeroRoute: ApiPublicPedidoNumeroRoute,
 }
