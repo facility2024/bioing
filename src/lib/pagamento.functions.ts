@@ -90,7 +90,7 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
     // Se aprovado imediatamente (cartão) → dispara notificações
     if (json.status === "approved") {
       const { notificarPedido } = await import("@/lib/pedido-notify.server");
-      notificarPedido(data.pedido_id).catch((e) =>
+      notificarPedido(data.pedido_id, data.origin).catch((e) =>
         console.error("[pagamento] notificar falhou:", e)
       );
     }
