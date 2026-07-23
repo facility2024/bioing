@@ -51,7 +51,6 @@ export function CheckoutDialog({
   const [showCardBrick, setShowCardBrick] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [pixData, setPixData] = useState<{ qr_code: string; qr_code_base64: string; ticket_url: string } | null>(null);
-  const [pixLink, setPixLink] = useState<string | null>(null);
 
   const total = subtotal + (freteSel?.preco ?? 0);
 
@@ -82,7 +81,7 @@ export function CheckoutDialog({
   const reset = () => {
     setStep("dados");
     setNome(""); setTelefone(""); setEmail(""); setCpf(""); setRua(""); setNumero(""); setBairro(""); setCidade(""); setEstado(""); setCep(""); setObs("");
-    setOpcoesFrete([]); setFreteSel(null); setPedido(null); setPixData(null); setPixLink(null); setShowCardBrick(false); setPkReady(mpInitialized);
+    setOpcoesFrete([]); setFreteSel(null); setPedido(null); setPixData(null); setShowCardBrick(false); setPkReady(mpInitialized);
   };
   const handleClose = (v: boolean) => {
     if (!v && step === "sucesso") { clear(); reset(); }
@@ -240,11 +239,7 @@ export function CheckoutDialog({
 
       if (res.pix) {
         setPixData(res.pix);
-        setPixLink(null);
         toast.success("PIX gerado com sucesso");
-      } else if (res.checkout_url) {
-        setPixLink(res.checkout_url);
-        toast.success("Link de pagamento PIX gerado com sucesso");
       } else if (res.status === "approved") {
         setStep("sucesso");
       } else {
@@ -425,33 +420,31 @@ export function CheckoutDialog({
                   Fechar / Cancelar
                 </Button>
 
-                    {pixData ? (
+                {pixData ? (
                   <div className="space-y-3 text-center">
-                      <>
-                        <img
-                          src={`data:image/png;base64,${pixData.qr_code_base64}`}
-                          alt="QR Code PIX"
-                          className="mx-auto w-56 h-56 border rounded"
-                        />
-                        <div className="text-xs text-muted-foreground">Após o pagamento, você receberá a confirmação por WhatsApp.</div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => {
-                              navigator.clipboard.writeText(pixData.qr_code);
-                              toast.success("Código PIX copiado!");
-                            }}
-                          >
-                            <Copy className="mr-2 h-4 w-4" /> Copiar código PIX
-                          </Button>
-                          <Button asChild variant="outline">
-                            <a href={pixData.ticket_url} target="_blank" rel="noreferrer">
-                              <FileText className="mr-2 h-4 w-4" /> Abrir
-                            </a>
-                          </Button>
-                        </div>
-                      </>
+                    <img
+                      src={`data:image/png;base64,${pixData.qr_code_base64}`}
+                      alt="QR Code PIX"
+                      className="mx-auto w-56 h-56 border rounded"
+                    />
+                    <div className="text-xs text-muted-foreground">Após o pagamento, você receberá a confirmação por WhatsApp.</div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          navigator.clipboard.writeText(pixData.qr_code);
+                          toast.success("Código PIX copiado!");
+                        }}
+                      >
+                        <Copy className="mr-2 h-4 w-4" /> Copiar código PIX
+                      </Button>
+                      <Button asChild variant="outline">
+                        <a href={pixData.ticket_url} target="_blank" rel="noreferrer">
+                          <FileText className="mr-2 h-4 w-4" /> Abrir
+                        </a>
+                      </Button>
+                    </div>
                     <Button className="w-full bg-header text-white hover:bg-header/90" onClick={() => setStep("sucesso")}>
                       Já paguei, finalizar
                     </Button>
