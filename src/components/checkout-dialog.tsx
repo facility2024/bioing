@@ -190,7 +190,13 @@ export function CheckoutDialog({
   }
 
   const paymentInitialization = useMemo(
-    () => ({ amount: total, payer: { email: email || undefined } }),
+    () => ({
+      amount: total,
+      payer: {
+        email: email || undefined,
+        entityType: "individual" as const,
+      },
+    }),
     [total, email]
   );
 
