@@ -57,7 +57,11 @@ export function CheckoutDialog({
   // Inicializa o Brick somente quando o cliente escolher cartão/boleto.
   // O PIX direto não depende do Brick, evitando o erro visual de SVG do SDK.
   useEffect(() => {
-    if (step !== "pagamento" || !showCardBrick || mpInitialized) return;
+    if (step !== "pagamento" || !showCardBrick) return;
+    if (mpInitialized) {
+      setPkReady(true);
+      return;
+    }
     (async () => {
       try {
         const { publicKey } = await getPk();
@@ -72,7 +76,6 @@ export function CheckoutDialog({
         toast.error("Erro ao carregar pagamento: " + (e as Error).message);
       }
     })();
-    if (mpInitialized) setPkReady(true);
   }, [step, showCardBrick, getPk]);
 
   const reset = () => {
