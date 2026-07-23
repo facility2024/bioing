@@ -189,6 +189,40 @@ export function CheckoutDialog({
     }
   }
 
+  async function gerarPix() {
+    if (!pedido) return;
+    setProcessing(true);
+    try {
+      const res = await pagar({
+        data: {
+          pedido_id: pedido.id,
+          transaction_amount: total,
+          description: `Pedido ${pedido.numero}`,
+          payer: {
+            email: email.trim(),
+            first_name: nome.trim().split(" ")[0] || undefined,
+          },
+          payment_method_id: "pix",
+          metodo: "pix",
+          origin: window.location.origin,
+        },
+      });
+
+      if (res.pix) {
+        setPixData(res.pix);
+        toast.success("PIX gerado com sucesso");
+      } else if (res.status === "approved") {
+        setStep("sucesso");
+      } else {
+        toast.info("Pagamento PIX criado. Aguarde a confirmação.");
+      }
+    } catch (err) {
+      toast.error("Erro ao gerar PIX: " + (err as Error).message);
+    } finally {
+      setProcessing(false);
+    }
+  }
+
   const paymentInitialization = useMemo(
     () => ({
       amount: Number.isFinite(total) && total > 0 ? Number(total.toFixed(2)) : 0.01,
@@ -387,6 +421,19 @@ export function CheckoutDialog({
                     <div className="rounded-lg border bg-muted/40 p-3 text-sm">
                       <div className="flex justify-between font-bold"><span>Total</span><span>{formatBRL(total)}</span></div>
                     </div>
+                    <Button
+                      type="button"
+                      size="lg"
+                      className="w-full bg-header text-primary-foreground hover:bg-header/90"
+                      onClick={gerarPix}
+                      disabled={processing}
+                    >
+                      {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                      Gerar PIX agora
+                    </Button>
+                    <div className="relative py-1 text-center text-xs text-muted-foreground">
+                      <span className="bg-background px-2">ou pague com cartão/boleto</span>
+                    </div>
                     <Payment
                       key={`mp-brick-${pedido?.numero ?? "novo"}`}
                       initialization={paymentInitialization}
@@ -394,7 +441,7 @@ export function CheckoutDialog({
                         paymentMethods: {
                           creditCard: "all",
                           debitCard: "all",
-                          bankTransfer: ["pix"],
+                          bankTransfer: [],
                           ticket: "all",
                           maxInstallments: 12,
                         },
