@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Boxes, Pencil, Search, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
