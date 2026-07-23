@@ -341,6 +341,16 @@ export function CheckoutDialog({
 
             {step === "pagamento" && (
               <div className="space-y-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => handleClose(false)}
+                  disabled={processing}
+                >
+                  Fechar / Cancelar
+                </Button>
+
                 {pixData ? (
                   <div className="space-y-3 text-center">
                     <img
