@@ -166,6 +166,7 @@ function EstoqueAdmin() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar estoque</DialogTitle>
+            <DialogDescription className="sr-only">Ajuste manual de estoque do produto</DialogDescription>
           </DialogHeader>
           {editando && (
             <div className="space-y-4">
