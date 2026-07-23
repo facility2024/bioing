@@ -26,8 +26,21 @@ function validate(input: unknown): CheckoutInput {
   if (!input || typeof input !== "object") throw new Error("Dados inválidos");
   const i = input as CheckoutInput;
   if (!i.cliente?.nome?.trim()) throw new Error("Informe seu nome");
+  if (i.cliente.nome.trim().length > 100) throw new Error("Nome muito longo");
   if (onlyDigits(i.cliente?.telefone || "").length < 10) throw new Error("Telefone inválido");
+  if (i.cliente.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(i.cliente.email.trim())) throw new Error("E-mail inválido");
+  if (i.cliente.email && i.cliente.email.trim().length > 255) throw new Error("E-mail muito longo");
+  if (!i.cliente?.endereco?.trim()) throw new Error("Endereço obrigatório");
+  if (i.cliente.endereco.trim().length > 220) throw new Error("Endereço muito longo");
+  if (!i.cliente?.cidade?.trim()) throw new Error("Cidade/estado obrigatórios");
+  if (i.cliente.cidade.trim().length > 100) throw new Error("Cidade/estado muito longo");
+  if (onlyDigits(i.cliente?.cep || "").length !== 8) throw new Error("CEP inválido");
+  if (i.cliente.observacoes && i.cliente.observacoes.trim().length > 200) throw new Error("Complemento muito longo");
   if (!Array.isArray(i.itens) || i.itens.length === 0) throw new Error("Carrinho vazio");
+  if (i.itens.some((item) => !item.nome?.trim() || item.nome.length > 200 || !(item.preco >= 0) || !(item.quantidade > 0))) {
+    throw new Error("Item inválido no carrinho");
+  }
+  if (!(i.subtotal >= 0) || !(i.frete?.valor >= 0)) throw new Error("Valores inválidos");
   if (!(i.total > 0)) throw new Error("Total inválido");
   return i;
 }
