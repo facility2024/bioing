@@ -172,6 +172,14 @@ export function CheckoutDialog({
             first_name: nome.trim().split(/\s+/)[0] || "Cliente",
             last_name: nome.trim().split(/\s+/).slice(1).join(" ") || "Silva",
             identification: formData?.payer?.identification || { type: "CPF", number: cpf.replace(/\D/g, "") },
+            address: {
+              zip_code: cep.replace(/\D/g, ""),
+              street_name: rua.trim(),
+              street_number: numero.trim(),
+              neighborhood: bairro.trim(),
+              city: cidade.trim(),
+              federal_unit: estado.trim().toUpperCase(),
+            },
           },
           token: formData?.token,
           payment_method_id: formData?.payment_method_id,
@@ -215,6 +223,14 @@ export function CheckoutDialog({
             first_name: nome.trim().split(/\s+/)[0] || "Cliente",
             last_name: nome.trim().split(/\s+/).slice(1).join(" ") || "Silva",
             identification: { type: "CPF", number: cpf.replace(/\D/g, "") },
+            address: {
+              zip_code: cep.replace(/\D/g, ""),
+              street_name: rua.trim(),
+              street_number: numero.trim(),
+              neighborhood: bairro.trim(),
+              city: cidade.trim(),
+              federal_unit: estado.trim().toUpperCase(),
+            },
           },
           payment_method_id: "pix",
           metodo: "pix",
@@ -409,9 +425,8 @@ export function CheckoutDialog({
                   Fechar / Cancelar
                 </Button>
 
-                {pixData || pixLink ? (
-                  <div className="space-y-3 text-center">
                     {pixData ? (
+                  <div className="space-y-3 text-center">
                       <>
                         <img
                           src={`data:image/png;base64,${pixData.qr_code_base64}`}
@@ -437,18 +452,6 @@ export function CheckoutDialog({
                           </Button>
                         </div>
                       </>
-                    ) : (
-                      <>
-                        <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
-                          O Mercado Pago não liberou o QR Code direto, mas gerou o link seguro para pagar com PIX.
-                        </div>
-                        <Button asChild className="w-full bg-header text-white hover:bg-header/90">
-                          <a href={pixLink ?? "#"} target="_blank" rel="noreferrer">
-                            <FileText className="mr-2 h-4 w-4" /> Abrir pagamento PIX
-                          </a>
-                        </Button>
-                      </>
-                    )}
                     <Button className="w-full bg-header text-white hover:bg-header/90" onClick={() => setStep("sucesso")}>
                       Já paguei, finalizar
                     </Button>
