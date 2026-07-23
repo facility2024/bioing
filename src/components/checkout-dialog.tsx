@@ -75,7 +75,7 @@ export function CheckoutDialog({
 
   const reset = () => {
     setStep("dados");
-    setNome(""); setTelefone(""); setEmail(""); setRua(""); setNumero(""); setBairro(""); setCidade(""); setEstado(""); setCep(""); setObs("");
+    setNome(""); setTelefone(""); setEmail(""); setCpf(""); setRua(""); setNumero(""); setBairro(""); setCidade(""); setEstado(""); setCep(""); setObs("");
     setOpcoesFrete([]); setFreteSel(null); setPedido(null); setPixData(null);
   };
   const handleClose = (v: boolean) => {
