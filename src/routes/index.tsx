@@ -23,7 +23,7 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Essência Aroma Em Pó Sabor Queijo Parmesão Intenso" },
     ],
     links: [
-      { rel: "preload", as: "image", href: LOGO_URL, fetchpriority: "high" },
+      { rel: "preload", as: "image", href: LOGO_URL, fetchPriority: "high" },
     ],
   }),
   component: () => (
