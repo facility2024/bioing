@@ -71,6 +71,7 @@ function SlidesAdmin() {
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["admin-slides"] });
     qc.invalidateQueries({ queryKey: ["home-slides"] });
+    qc.invalidateQueries({ queryKey: ["home-slides-all"] });
     qc.invalidateQueries({ queryKey: ["admin-home-secoes"] });
     qc.invalidateQueries({ queryKey: ["home-secoes"] });
   };
