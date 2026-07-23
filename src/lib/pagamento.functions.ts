@@ -84,20 +84,11 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
     const firstName = stripAccents(data.payer.first_name || "");
     const lastName = stripAccents(data.payer.last_name || "");
 
-    const payer: any = {
-      email,
-    };
-    // Para PIX/boleto o Mercado Pago pode rejeitar quando nome/sobrenome não batem
-    // com o CPF ("Financial Identity"). Enviamos o formato oficial mínimo: e-mail + CPF.
-    if (data.metodo === "card") {
-      payer.first_name = firstName || "Cliente";
-      payer.last_name = lastName || "Silva";
-    }
-    if (data.payer.identification?.number) {
-      payer.identification = {
-        type: data.payer.identification.type || "CPF",
-        number: documentNumber,
-      };
+    const payer: any = { email };
+    payer.first_name = firstName || "Cliente";
+    payer.last_name = lastName || "Silva";
+    if (documentNumber.length === 11) {
+      payer.identification = { type: "CPF", number: documentNumber };
     }
 
     const body: any = {
@@ -116,94 +107,28 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
       body.capture = true;
     } else if (data.metodo === "pix") {
       body.payment_method_id = "pix";
+      const exp = new Date(Date.now() + 30 * 60 * 1000);
+      body.date_of_expiration = exp.toISOString().replace("Z", "-00:00");
     } else if (data.metodo === "bolbradesco") {
       body.payment_method_id = "bolbradesco";
     }
 
-    const createPayment = async (payload: any) => fetch(`${MP_BASE}/v1/payments`, {
+    const res = await fetch(`${MP_BASE}/v1/payments`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
         "X-Idempotency-Key": crypto.randomUUID(),
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     });
-
-    const createPreferenceFallback = async () => {
-      const prefBody: any = {
-        items: [
-          {
-            title: data.description || "Pedido",
-            quantity: 1,
-            currency_id: "BRL",
-            unit_price: amount,
-          },
-        ],
-        payer: { email },
-        external_reference: data.pedido_id,
-        notification_url: notificationUrl,
-        payment_methods: {
-          excluded_payment_types: [
-            { id: "credit_card" },
-            { id: "debit_card" },
-            { id: "ticket" },
-          ],
-          installments: 1,
-        },
-      };
-      if (data.origin) {
-        const base = data.origin.replace(/\/+$/, "");
-        prefBody.back_urls = {
-          success: `${base}/`,
-          failure: `${base}/`,
-          pending: `${base}/`,
-        };
-      }
-
-      const prefRes = await fetch(`${MP_BASE}/checkout/preferences`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(prefBody),
-      });
-      const prefJson: any = await prefRes.json().catch(() => ({}));
-      if (!prefRes.ok) {
-        console.error("[MP] fallback preference erro", prefRes.status, prefJson);
-        throw new Error(getMpErrorMessage(prefJson, prefRes.status));
-      }
-
-      await supabaseAdmin
-        .from("pedidos")
-        .update({
-          mp_preference_id: prefJson.id ? String(prefJson.id) : null,
-          pagamento_status: "pendente",
-          pagamento_metodo: "pix",
-        })
-        .eq("id", data.pedido_id);
-
-      return {
-        status: "pending",
-        status_detail: "checkout_link",
-        id: prefJson.id ? String(prefJson.id) : "",
-        pix: null,
-        checkout_url: (prefJson.init_point || prefJson.sandbox_init_point || "") as string,
-      };
-    };
-
-    const res = await createPayment(body);
 
     const json: any = await res.json().catch(() => ({}));
     if (!res.ok) {
-      console.error("[MP] erro", res.status, json);
-      const message = getMpErrorMessage(json, res.status);
-      if (data.metodo === "pix" && isFinancialIdentityError(message)) {
-        return createPreferenceFallback();
-      }
-      throw new Error(message);
+      console.error("[MP] erro", res.status, JSON.stringify(json));
+      throw new Error(getMpErrorMessage(json, res.status));
     }
+
 
     // Persiste no pedido
     await supabaseAdmin
