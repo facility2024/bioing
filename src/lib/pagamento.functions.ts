@@ -65,9 +65,6 @@ function getMpErrorMessage(json: MercadoPagoError, fallbackStatus: number) {
   return cause?.description || json?.message || json?.error || `Falha no pagamento (${fallbackStatus})`;
 }
 
-function isFinancialIdentityError(message: string) {
-  return /financial identity/i.test(message);
-}
 
 export const criarPagamentoMP = createServerFn({ method: "POST" })
   .validator((i: unknown) => validate(i))
