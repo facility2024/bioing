@@ -195,7 +195,7 @@ function PedidosAdmin() {
       <Dialog open={!!sel} onOpenChange={(v) => !v && setSel(null)}>
 
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Pedido {sel?.numero}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Pedido {sel?.numero}</DialogTitle><DialogDescription className="sr-only">Detalhes do pedido</DialogDescription></DialogHeader>
           {sel && (
             <div className="space-y-3 text-sm">
               <div className="rounded-md border p-3 space-y-1">
