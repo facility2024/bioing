@@ -10,7 +10,7 @@ type CriarPagInput = {
   pedido_id: string;
   transaction_amount: number;
   description: string;
-  payer: { email: string; first_name?: string; identification?: { type: string; number: string } };
+  payer: { email: string; first_name?: string; last_name?: string; identification?: { type: string; number: string } };
   // Cartão
   token?: string;
   payment_method_id?: string;
@@ -49,9 +49,15 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    const stripAccents = (s: string) =>
+      (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z\s'-]/g, "").trim();
+    const firstName = stripAccents(data.payer.first_name || "Cliente") || "Cliente";
+    const lastName = stripAccents(data.payer.last_name || "") || "Silva";
+
     const payer: any = {
-      email: data.payer.email.trim(),
-      first_name: data.payer.first_name || "Cliente",
+      email: data.payer.email.trim().toLowerCase(),
+      first_name: firstName,
+      last_name: lastName,
     };
     if (data.payer.identification?.number) {
       payer.identification = {
