@@ -231,48 +231,48 @@ export function CheckoutDialog({
                   <Label>Nome completo *</Label>
                   <Input value={nome} onChange={(e) => setNome(e.target.value)} required />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label>WhatsApp *</Label>
-                    <Input placeholder="5511999999999" value={telefone} onChange={(e) => setTelefone(e.target.value)} required />
+                    <Input placeholder="5511999999999" maxLength={15} value={telefone} onChange={(e) => setTelefone(e.target.value)} required />
                   </div>
                   <div className="space-y-1">
                     <Label>E-mail *</Label>
-                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    <Input type="email" maxLength={255} value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                 </div>
                 <div className="space-y-1">
                   <Label>Rua *</Label>
-                  <Input placeholder="Nome da rua" value={rua} onChange={(e) => setRua(e.target.value)} required />
+                  <Input placeholder="Nome da rua" maxLength={120} value={rua} onChange={(e) => setRua(e.target.value)} required />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label>Número *</Label>
-                    <Input placeholder="Ex: 11" value={numero} onChange={(e) => setNumero(e.target.value)} required />
+                    <Input placeholder="Ex: 11" maxLength={20} value={numero} onChange={(e) => setNumero(e.target.value)} required />
                   </div>
                   <div className="space-y-1">
                     <Label>Bairro *</Label>
-                    <Input placeholder="Seu bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} required />
+                    <Input placeholder="Seu bairro" maxLength={80} value={bairro} onChange={(e) => setBairro(e.target.value)} required />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label>Cidade *</Label>
-                    <Input value={cidade} onChange={(e) => setCidade(e.target.value)} required />
+                    <Input maxLength={80} value={cidade} onChange={(e) => setCidade(e.target.value)} required />
                   </div>
                   <div className="space-y-1">
                     <Label>Estado *</Label>
-                    <Input placeholder="SP" maxLength={2} value={estado} onChange={(e) => setEstado(e.target.value.toUpperCase())} required />
+                    <Input placeholder="SP" maxLength={2} value={estado} onChange={(e) => setEstado(e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase())} required />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label>CEP *</Label>
-                    <Input placeholder="00000-000" value={cep} onChange={(e) => setCep(e.target.value)} required />
+                    <Input placeholder="00000-000" maxLength={9} value={cep} onChange={(e) => setCep(e.target.value)} required />
                   </div>
                   <div className="space-y-1">
                     <Label>Complemento</Label>
-                    <Input placeholder="Apto, bloco, referência" value={obs} onChange={(e) => setObs(e.target.value)} />
+                    <Input placeholder="Apto, bloco, referência" maxLength={200} value={obs} onChange={(e) => setObs(e.target.value)} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border bg-muted/40 p-3">
