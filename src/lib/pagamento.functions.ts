@@ -10,7 +10,20 @@ type CriarPagInput = {
   pedido_id: string;
   transaction_amount: number;
   description: string;
-  payer: { email: string; first_name?: string; last_name?: string; identification?: { type: string; number: string } };
+  payer: {
+    email: string;
+    first_name?: string;
+    last_name?: string;
+    identification?: { type: string; number: string };
+    address?: {
+      zip_code?: string;
+      street_name?: string;
+      street_number?: string;
+      neighborhood?: string;
+      city?: string;
+      federal_unit?: string;
+    };
+  };
   // Cartão
   token?: string;
   payment_method_id?: string;
@@ -56,12 +69,24 @@ function stripAccents(s: string) {
     .trim();
 }
 
+function cleanAddressText(s: string) {
+  return (s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9\s.,'/-]/g, "")
+    .trim();
+}
+
 function normalizeAmount(value: number) {
   return Number(Number(value || 0).toFixed(2));
 }
 
 function getMpErrorMessage(json: MercadoPagoError, fallbackStatus: number) {
   const cause = Array.isArray(json?.cause) && json.cause.length ? json.cause[0] : null;
+  const rawMessage = `${json?.message || ""} ${cause?.description || ""}`;
+  if (String(cause?.code) === "13253" || /Collector user without key enabled for QR render/i.test(rawMessage)) {
+    return "A conta vendedora do Mercado Pago ligada ao MP_ACCESS_TOKEN ainda não tem chave PIX habilitada para gerar QR Code. Ative/cadastre uma chave PIX nessa conta e salve o Access Token de produção dessa mesma conta.";
+  }
   return cause?.description || json?.message || json?.error || `Falha no pagamento (${fallbackStatus})`;
 }
 
@@ -81,11 +106,30 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
     const firstName = stripAccents(data.payer.first_name || "");
     const lastName = stripAccents(data.payer.last_name || "");
 
-    const payer: any = { email };
+    const payer: any = { email, entity_type: "individual" };
     payer.first_name = firstName || "Cliente";
     payer.last_name = lastName || "Silva";
     if (documentNumber.length === 11) {
       payer.identification = { type: "CPF", number: documentNumber };
+    }
+    const address = data.payer.address;
+    const addressPayload = {
+      zip_code: onlyDigits(address?.zip_code || ""),
+      street_name: cleanAddressText(address?.street_name || ""),
+      street_number: cleanAddressText(address?.street_number || ""),
+      neighborhood: cleanAddressText(address?.neighborhood || ""),
+      city: cleanAddressText(address?.city || ""),
+      federal_unit: cleanAddressText(address?.federal_unit || "").slice(0, 2).toUpperCase(),
+    };
+    if (
+      addressPayload.zip_code.length === 8 &&
+      addressPayload.street_name &&
+      addressPayload.street_number &&
+      addressPayload.neighborhood &&
+      addressPayload.city &&
+      addressPayload.federal_unit.length === 2
+    ) {
+      payer.address = addressPayload;
     }
 
     const body: any = {
@@ -157,6 +201,5 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
               ticket_url: json.point_of_interaction.transaction_data.ticket_url as string,
             }
           : null,
-      checkout_url: null,
     };
   });

@@ -51,7 +51,6 @@ export function CheckoutDialog({
   const [showCardBrick, setShowCardBrick] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [pixData, setPixData] = useState<{ qr_code: string; qr_code_base64: string; ticket_url: string } | null>(null);
-  const [pixLink, setPixLink] = useState<string | null>(null);
 
   const total = subtotal + (freteSel?.preco ?? 0);
 
@@ -82,7 +81,7 @@ export function CheckoutDialog({
   const reset = () => {
     setStep("dados");
     setNome(""); setTelefone(""); setEmail(""); setCpf(""); setRua(""); setNumero(""); setBairro(""); setCidade(""); setEstado(""); setCep(""); setObs("");
-    setOpcoesFrete([]); setFreteSel(null); setPedido(null); setPixData(null); setPixLink(null); setShowCardBrick(false); setPkReady(mpInitialized);
+    setOpcoesFrete([]); setFreteSel(null); setPedido(null); setPixData(null); setShowCardBrick(false); setPkReady(mpInitialized);
   };
   const handleClose = (v: boolean) => {
     if (!v && step === "sucesso") { clear(); reset(); }
@@ -172,6 +171,14 @@ export function CheckoutDialog({
             first_name: nome.trim().split(/\s+/)[0] || "Cliente",
             last_name: nome.trim().split(/\s+/).slice(1).join(" ") || "Silva",
             identification: formData?.payer?.identification || { type: "CPF", number: cpf.replace(/\D/g, "") },
+            address: {
+              zip_code: cep.replace(/\D/g, ""),
+              street_name: rua.trim(),
+              street_number: numero.trim(),
+              neighborhood: bairro.trim(),
+              city: cidade.trim(),
+              federal_unit: estado.trim().toUpperCase(),
+            },
           },
           token: formData?.token,
           payment_method_id: formData?.payment_method_id,
@@ -215,6 +222,14 @@ export function CheckoutDialog({
             first_name: nome.trim().split(/\s+/)[0] || "Cliente",
             last_name: nome.trim().split(/\s+/).slice(1).join(" ") || "Silva",
             identification: { type: "CPF", number: cpf.replace(/\D/g, "") },
+            address: {
+              zip_code: cep.replace(/\D/g, ""),
+              street_name: rua.trim(),
+              street_number: numero.trim(),
+              neighborhood: bairro.trim(),
+              city: cidade.trim(),
+              federal_unit: estado.trim().toUpperCase(),
+            },
           },
           payment_method_id: "pix",
           metodo: "pix",
@@ -224,11 +239,7 @@ export function CheckoutDialog({
 
       if (res.pix) {
         setPixData(res.pix);
-        setPixLink(null);
         toast.success("PIX gerado com sucesso");
-      } else if (res.checkout_url) {
-        setPixLink(res.checkout_url);
-        toast.success("Link de pagamento PIX gerado com sucesso");
       } else if (res.status === "approved") {
         setStep("sucesso");
       } else {
@@ -409,46 +420,31 @@ export function CheckoutDialog({
                   Fechar / Cancelar
                 </Button>
 
-                {pixData || pixLink ? (
+                {pixData ? (
                   <div className="space-y-3 text-center">
-                    {pixData ? (
-                      <>
-                        <img
-                          src={`data:image/png;base64,${pixData.qr_code_base64}`}
-                          alt="QR Code PIX"
-                          className="mx-auto w-56 h-56 border rounded"
-                        />
-                        <div className="text-xs text-muted-foreground">Após o pagamento, você receberá a confirmação por WhatsApp.</div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => {
-                              navigator.clipboard.writeText(pixData.qr_code);
-                              toast.success("Código PIX copiado!");
-                            }}
-                          >
-                            <Copy className="mr-2 h-4 w-4" /> Copiar código PIX
-                          </Button>
-                          <Button asChild variant="outline">
-                            <a href={pixData.ticket_url} target="_blank" rel="noreferrer">
-                              <FileText className="mr-2 h-4 w-4" /> Abrir
-                            </a>
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
-                          O Mercado Pago não liberou o QR Code direto, mas gerou o link seguro para pagar com PIX.
-                        </div>
-                        <Button asChild className="w-full bg-header text-white hover:bg-header/90">
-                          <a href={pixLink ?? "#"} target="_blank" rel="noreferrer">
-                            <FileText className="mr-2 h-4 w-4" /> Abrir pagamento PIX
-                          </a>
-                        </Button>
-                      </>
-                    )}
+                    <img
+                      src={`data:image/png;base64,${pixData.qr_code_base64}`}
+                      alt="QR Code PIX"
+                      className="mx-auto w-56 h-56 border rounded"
+                    />
+                    <div className="text-xs text-muted-foreground">Após o pagamento, você receberá a confirmação por WhatsApp.</div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          navigator.clipboard.writeText(pixData.qr_code);
+                          toast.success("Código PIX copiado!");
+                        }}
+                      >
+                        <Copy className="mr-2 h-4 w-4" /> Copiar código PIX
+                      </Button>
+                      <Button asChild variant="outline">
+                        <a href={pixData.ticket_url} target="_blank" rel="noreferrer">
+                          <FileText className="mr-2 h-4 w-4" /> Abrir
+                        </a>
+                      </Button>
+                    </div>
                     <Button className="w-full bg-header text-white hover:bg-header/90" onClick={() => setStep("sucesso")}>
                       Já paguei, finalizar
                     </Button>
