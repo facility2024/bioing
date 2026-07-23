@@ -375,6 +375,7 @@ export function CheckoutDialog({
                       <div className="flex justify-between font-bold"><span>Total</span><span>{formatBRL(total)}</span></div>
                     </div>
                     <Payment
+                      key={`mp-brick-${pedido?.numero ?? "novo"}`}
                       initialization={paymentInitialization}
                       customization={{
                         paymentMethods: {
