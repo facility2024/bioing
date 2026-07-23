@@ -127,7 +127,7 @@ export function CheckoutDialog({
           total,
         },
       });
-      setPedido(p);
+      setPedido({ id: p.pedido_id, numero: p.numero });
       setStep("pagamento");
     } catch (err) {
       toast.error((err as Error).message);
