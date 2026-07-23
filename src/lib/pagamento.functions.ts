@@ -18,6 +18,7 @@ type CriarPagInput = {
   issuer_id?: string;
   // Genérico
   metodo: "card" | "pix" | "bolbradesco";
+  origin?: string;
 };
 
 function validate(i: unknown): CriarPagInput {
