@@ -201,6 +201,5 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
               ticket_url: json.point_of_interaction.transaction_data.ticket_url as string,
             }
           : null,
-      checkout_url: null,
     };
   });
