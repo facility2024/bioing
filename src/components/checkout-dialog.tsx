@@ -193,11 +193,13 @@ export function CheckoutDialog({
     () => ({
       amount: Number.isFinite(total) && total > 0 ? Number(total.toFixed(2)) : 0.01,
       payer: {
-        email: email || undefined,
+        email: (email || "").trim() || undefined,
+        firstName: nome.trim().split(" ")[0] || undefined,
+        lastName: nome.trim().split(" ").slice(1).join(" ") || undefined,
         entityType: "individual" as const,
       },
     }),
-    [total, email]
+    [total, email, nome]
   );
 
 
