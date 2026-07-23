@@ -26,8 +26,10 @@ export function HomeSlider({ secao = 1 }: { secao?: number }) {
       if (error) throw error;
       return (data ?? []) as Slide[];
     },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   const slides = useMemo(
