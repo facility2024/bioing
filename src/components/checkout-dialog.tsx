@@ -191,7 +191,7 @@ export function CheckoutDialog({
 
   const paymentInitialization = useMemo(
     () => ({
-      amount: total,
+      amount: Number.isFinite(total) && total > 0 ? Number(total.toFixed(2)) : 0.01,
       payer: {
         email: email || undefined,
         entityType: "individual" as const,
@@ -199,6 +199,7 @@ export function CheckoutDialog({
     }),
     [total, email]
   );
+
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -340,6 +341,16 @@ export function CheckoutDialog({
 
             {step === "pagamento" && (
               <div className="space-y-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => handleClose(false)}
+                  disabled={processing}
+                >
+                  Fechar / Cancelar
+                </Button>
+
                 {pixData ? (
                   <div className="space-y-3 text-center">
                     <img
