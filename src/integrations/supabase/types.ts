@@ -435,9 +435,16 @@ export type Database = {
           cliente_id: string
           created_at: string
           endereco_id: string | null
+          frete_prazo_dias: number | null
+          frete_servico: string | null
+          frete_valor: number
           id: string
+          mp_preference_id: string | null
           numero: string
           observacoes: string | null
+          pagamento_id: string | null
+          pagamento_metodo: string | null
+          pagamento_status: string
           status: string
           subtotal: number
           total: number
@@ -447,9 +454,16 @@ export type Database = {
           cliente_id: string
           created_at?: string
           endereco_id?: string | null
+          frete_prazo_dias?: number | null
+          frete_servico?: string | null
+          frete_valor?: number
           id?: string
+          mp_preference_id?: string | null
           numero?: string
           observacoes?: string | null
+          pagamento_id?: string | null
+          pagamento_metodo?: string | null
+          pagamento_status?: string
           status?: string
           subtotal?: number
           total?: number
@@ -459,9 +473,16 @@ export type Database = {
           cliente_id?: string
           created_at?: string
           endereco_id?: string | null
+          frete_prazo_dias?: number | null
+          frete_servico?: string | null
+          frete_valor?: number
           id?: string
+          mp_preference_id?: string | null
           numero?: string
           observacoes?: string | null
+          pagamento_id?: string | null
+          pagamento_metodo?: string | null
+          pagamento_status?: string
           status?: string
           subtotal?: number
           total?: number
@@ -486,8 +507,10 @@ export type Database = {
       }
       produtos: {
         Row: {
+          altura_cm: number | null
           ativo: boolean
           categoria_id: string | null
+          comprimento_cm: number | null
           controla_estoque: boolean
           created_at: string
           descricao: string | null
@@ -495,15 +518,19 @@ export type Database = {
           id: string
           imagem_url: string | null
           imagens: string[]
+          largura_cm: number | null
           nome: string
           notificado_estoque_baixo: boolean
+          peso_g: number | null
           preco: number
           secao: number
           updated_at: string
         }
         Insert: {
+          altura_cm?: number | null
           ativo?: boolean
           categoria_id?: string | null
+          comprimento_cm?: number | null
           controla_estoque?: boolean
           created_at?: string
           descricao?: string | null
@@ -511,15 +538,19 @@ export type Database = {
           id?: string
           imagem_url?: string | null
           imagens?: string[]
+          largura_cm?: number | null
           nome: string
           notificado_estoque_baixo?: boolean
+          peso_g?: number | null
           preco: number
           secao?: number
           updated_at?: string
         }
         Update: {
+          altura_cm?: number | null
           ativo?: boolean
           categoria_id?: string | null
+          comprimento_cm?: number | null
           controla_estoque?: boolean
           created_at?: string
           descricao?: string | null
@@ -527,8 +558,10 @@ export type Database = {
           id?: string
           imagem_url?: string | null
           imagens?: string[]
+          largura_cm?: number | null
           nome?: string
           notificado_estoque_baixo?: boolean
+          peso_g?: number | null
           preco?: number
           secao?: number
           updated_at?: string
