@@ -10,7 +10,7 @@ type CriarPagInput = {
   pedido_id: string;
   transaction_amount: number;
   description: string;
-  payer: { email: string; first_name?: string; identification?: { type: string; number: string } };
+  payer: { email: string; first_name?: string; last_name?: string; identification?: { type: string; number: string } };
   // Cartão
   token?: string;
   payment_method_id?: string;
