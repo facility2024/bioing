@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import {
+  criarOrderPixDinamico,
   criarPagamentoMercadoPago,
   diagnosticarContaMercadoPago,
   montarPagamentoMercadoPago,
@@ -41,11 +42,40 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
     if (!token) throw new Error("MP_ACCESS_TOKEN não configurado");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // PIX → Orders API (QR dinâmico oficial)
+    if (data.metodo === "pix") {
+      const order = await criarOrderPixDinamico(token, data);
+      const QRCode = (await import("qrcode")).default;
+      const qr_code_base64 = (
+        await QRCode.toDataURL(order.qr_data, { errorCorrectionLevel: "M", margin: 1, width: 400 })
+      ).replace(/^data:image\/png;base64,/, "");
+
+      await supabaseAdmin
+        .from("pedidos")
+        .update({
+          pagamento_id: order.payment_id || order.order_id,
+          pagamento_status: "pendente",
+          pagamento_metodo: "pix",
+        })
+        .eq("id", data.pedido_id);
+
+      return {
+        status: "pending",
+        status_detail: "waiting_pix_payment",
+        id: order.order_id,
+        pix: {
+          qr_code: order.qr_data,
+          qr_code_base64,
+          ticket_url: "",
+        },
+      };
+    }
+
+    // Cartão / Boleto → /v1/payments
     const body = montarPagamentoMercadoPago(data);
     const json = await criarPagamentoMercadoPago(token, body);
 
-
-    // Persiste no pedido
     await supabaseAdmin
       .from("pedidos")
       .update({
@@ -55,7 +85,6 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
       })
       .eq("id", data.pedido_id);
 
-    // Se aprovado imediatamente (cartão) → dispara notificações
     if (json.status === "approved") {
       const { notificarPedido } = await import("@/lib/pedido-notify.server");
       notificarPedido(data.pedido_id, data.origin).catch((e) =>
@@ -67,13 +96,6 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
       status: json.status as string,
       status_detail: json.status_detail as string,
       id: String(json.id),
-      pix:
-        json.point_of_interaction?.transaction_data
-          ? {
-              qr_code: json.point_of_interaction.transaction_data.qr_code as string,
-              qr_code_base64: json.point_of_interaction.transaction_data.qr_code_base64 as string,
-              ticket_url: json.point_of_interaction.transaction_data.ticket_url as string,
-            }
-          : null,
+      pix: null,
     };
   });
