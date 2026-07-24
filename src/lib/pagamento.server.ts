@@ -30,7 +30,7 @@ type MercadoPagoError = {
   message?: string;
   error?: string;
   status?: number;
-  cause?: Array<{ code?: string | number; description?: string }>;
+  cause?: Array<{ code?: string | number; description?: string; data?: string }>;
 };
 
 type MpUser = {
@@ -74,9 +74,27 @@ export function getMpErrorMessage(json: MercadoPagoError, fallbackStatus: number
   const cause = Array.isArray(json?.cause) && json.cause.length ? json.cause[0] : null;
   const rawMessage = `${json?.message || ""} ${cause?.description || ""}`;
   if (String(cause?.code) === "13253" || /Collector user without key enabled for QR render/i.test(rawMessage)) {
-    return "O Mercado Pago recusou a geração do QR Code PIX com o erro 13253. O suporte informa que a conta está habilitada, então confira se o MP_ACCESS_TOKEN salvo aqui é o token de PRODUÇÃO da mesma conta vendedora habilitada. Rode o diagnóstico do Mercado Pago no sistema ou atualize a credencial.";
+    return "O Mercado Pago recusou o PIX com o erro 13253 (QR render). A requisição enviada está no formato oficial; esse retorno vem da própria conta/token do Mercado Pago. Confirme com o suporte se o Access Token de produção salvo no app pertence exatamente ao vendedor habilitado para QR Code PIX dinâmico via API e peça validação usando o ID técnico do erro nos logs.";
   }
   return cause?.description || json?.message || json?.error || `Falha no pagamento (${fallbackStatus})`;
+}
+
+function hasQrRenderError(json: MercadoPagoError) {
+  const cause = Array.isArray(json?.cause) && json.cause.length ? json.cause[0] : null;
+  const rawMessage = `${json?.message || ""} ${cause?.description || ""}`;
+  return String(cause?.code) === "13253" || /Collector user without key enabled for QR render/i.test(rawMessage);
+}
+
+function summarizeMercadoPagoError(json: MercadoPagoError) {
+  const cause = Array.isArray(json?.cause) && json.cause.length ? json.cause[0] : null;
+  return {
+    status: json.status,
+    error: json.error,
+    message: json.message,
+    causeCode: cause?.code,
+    causeDescription: cause?.description,
+    traceId: cause?.data,
+  };
 }
 
 export async function diagnosticarContaMercadoPago(token: string, publicKey: string) {
@@ -116,6 +134,7 @@ export function montarPagamentoMercadoPago(data: CriarPagInput) {
 
   const payer: Record<string, unknown> = {
     email,
+    entity_type: "individual",
     first_name: firstName || "Cliente",
     last_name: lastName || "Silva",
   };
@@ -152,16 +171,15 @@ export function montarPagamentoMercadoPago(data: CriarPagInput) {
   };
 
   if (data.metodo === "card") {
-    payer.entity_type = "individual";
     body.token = data.token;
     body.payment_method_id = data.payment_method_id;
     body.installments = data.installments || 1;
     if (data.issuer_id) body.issuer_id = data.issuer_id;
     body.capture = true;
   } else if (data.metodo === "pix") {
+    // Payload oficial do Checkout API PIX: valor, descrição, método e payer com CPF/endereço.
+    // Evita campos opcionais que podem acionar validações inconsistentes de QR render.
     body.payment_method_id = "pix";
-    const exp = new Date(Date.now() + 30 * 60 * 1000);
-    body.date_of_expiration = exp.toISOString().replace("Z", "-00:00");
   } else if (data.metodo === "bolbradesco") {
     body.payment_method_id = "bolbradesco";
   }
@@ -182,7 +200,13 @@ export async function criarPagamentoMercadoPago(token: string, body: Record<stri
 
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
-    console.error("[MP] erro", res.status, JSON.stringify(json));
+    console.error("[MP] erro", res.status, JSON.stringify(summarizeMercadoPagoError(json)));
+    if (hasQrRenderError(json)) {
+      const diag = await diagnosticarContaMercadoPago(token, "").catch((error) => ({
+        diagnosticoFalhou: error instanceof Error ? error.message : "Erro desconhecido",
+      }));
+      console.error("[MP] diagnostico 13253", JSON.stringify(diag));
+    }
     throw new Error(getMpErrorMessage(json, res.status));
   }
   return json;
