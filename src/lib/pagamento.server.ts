@@ -210,3 +210,78 @@ export async function criarPagamentoMercadoPago(token: string, body: Record<stri
   }
   return json;
 }
+
+/**
+ * Cria uma Order QR dinâmica (Orders API) para PIX.
+ * POST /v1/orders com type: "qr" e config.qr.mode: "dynamic".
+ * O QR é renderizado a partir do campo type_response.qr_data.
+ */
+export async function criarOrderPixDinamico(
+  token: string,
+  data: CriarPagInput,
+): Promise<{ qr_data: string; order_id: string; payment_id?: string }> {
+  const amount = normalizeAmount(data.transaction_amount).toFixed(2);
+  const email = data.payer.email.trim().toLowerCase();
+  const documentNumber = onlyDigits(data.payer.identification?.number || "");
+  const firstName = stripAccents(data.payer.first_name || "") || "Cliente";
+  const lastName = stripAccents(data.payer.last_name || "") || "Silva";
+
+  const payer: Record<string, unknown> = {
+    email,
+    first_name: firstName,
+    last_name: lastName,
+  };
+  if (documentNumber.length === 11) {
+    payer.identification = { type: "CPF", number: documentNumber };
+  }
+
+  const body = {
+    type: "qr",
+    external_reference: data.pedido_id,
+    total_amount: amount,
+    description: data.description,
+    config: { qr: { mode: "dynamic" } },
+    transactions: {
+      payments: [
+        {
+          amount,
+          payment_method: { id: "pix", type: "bank_transfer" },
+        },
+      ],
+    },
+    payer,
+  };
+
+  const res = await fetch(`${MP_BASE}/v1/orders`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "X-Idempotency-Key": crypto.randomUUID(),
+    },
+    body: JSON.stringify(body),
+  });
+
+  const json = (await res.json().catch(() => ({}))) as MercadoPagoError & {
+    id?: string;
+    type_response?: { qr_data?: string };
+    transactions?: { payments?: Array<{ id?: string }> };
+  };
+
+  if (!res.ok) {
+    console.error("[MP] orders erro", res.status, JSON.stringify(summarizeMercadoPagoError(json)));
+    throw new Error(getMpErrorMessage(json, res.status));
+  }
+
+  const qr_data = json.type_response?.qr_data || "";
+  if (!qr_data) {
+    console.error("[MP] orders sem qr_data", JSON.stringify(json).slice(0, 500));
+    throw new Error("Não foi possível gerar o QR Code PIX no momento. Tente novamente.");
+  }
+
+  return {
+    qr_data,
+    order_id: String(json.id || ""),
+    payment_id: json.transactions?.payments?.[0]?.id,
+  };
+}
