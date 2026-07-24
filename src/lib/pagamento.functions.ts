@@ -41,6 +41,19 @@ type MercadoPagoError = {
   cause?: Array<{ code?: string | number; description?: string }>;
 };
 
+type MpUser = {
+  id?: number | string;
+  site_id?: string;
+  country_id?: string;
+  nickname?: string;
+  status?: {
+    sell?: { allow?: boolean; codes?: string[] };
+    billing?: { allow?: boolean; codes?: string[] };
+  };
+  tags?: string[];
+  identification?: { type?: string };
+};
+
 function validate(i: unknown): CriarPagInput {
   if (!i || typeof i !== "object") throw new Error("Dados inválidos");
   const inp = i as CriarPagInput;
@@ -85,10 +98,41 @@ function getMpErrorMessage(json: MercadoPagoError, fallbackStatus: number) {
   const cause = Array.isArray(json?.cause) && json.cause.length ? json.cause[0] : null;
   const rawMessage = `${json?.message || ""} ${cause?.description || ""}`;
   if (String(cause?.code) === "13253" || /Collector user without key enabled for QR render/i.test(rawMessage)) {
-    return "A conta vendedora do Mercado Pago ligada ao MP_ACCESS_TOKEN ainda não tem chave PIX habilitada para gerar QR Code. Ative/cadastre uma chave PIX nessa conta e salve o Access Token de produção dessa mesma conta.";
+    return "O Mercado Pago recusou a geração do QR Code PIX com o erro 13253. O suporte informa que a conta está habilitada, então confira se o MP_ACCESS_TOKEN salvo aqui é o token de PRODUÇÃO da mesma conta vendedora habilitada. Rode o diagnóstico do Mercado Pago no sistema ou atualize a credencial.";
   }
   return cause?.description || json?.message || json?.error || `Falha no pagamento (${fallbackStatus})`;
 }
+
+export const diagnosticarMercadoPago = createServerFn({ method: "GET" }).handler(async () => {
+  const token = process.env.MP_ACCESS_TOKEN;
+  const publicKey = process.env.MP_PUBLIC_KEY || "";
+  if (!token) throw new Error("MP_ACCESS_TOKEN não configurado");
+
+  const res = await fetch(`${MP_BASE}/users/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const user = (await res.json().catch(() => ({}))) as MpUser & MercadoPagoError;
+  if (!res.ok) {
+    throw new Error(getMpErrorMessage(user, res.status));
+  }
+
+  return {
+    tokenPrefix: token.slice(0, 8),
+    isProductionToken: token.startsWith("APP_USR-"),
+    publicKeyPrefix: publicKey.slice(0, 8),
+    isProductionPublicKey: publicKey.startsWith("APP_USR-"),
+    userId: user.id ? String(user.id) : "",
+    siteId: user.site_id || "",
+    countryId: user.country_id || "",
+    nickname: user.nickname || "",
+    canSell: user.status?.sell?.allow === true,
+    canBill: user.status?.billing?.allow === true,
+    sellCodes: user.status?.sell?.codes || [],
+    billingCodes: user.status?.billing?.codes || [],
+    accountDocumentType: user.identification?.type || "",
+    accountTags: Array.isArray(user.tags) ? user.tags.slice(0, 12) : [],
+  };
+});
 
 
 export const criarPagamentoMP = createServerFn({ method: "POST" })
@@ -106,7 +150,7 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
     const firstName = stripAccents(data.payer.first_name || "");
     const lastName = stripAccents(data.payer.last_name || "");
 
-    const payer: any = { email, entity_type: "individual" };
+    const payer: any = { email };
     payer.first_name = firstName || "Cliente";
     payer.last_name = lastName || "Silva";
     if (documentNumber.length === 11) {
@@ -141,6 +185,7 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
     };
 
     if (data.metodo === "card") {
+      payer.entity_type = "individual";
       body.token = data.token;
       body.payment_method_id = data.payment_method_id;
       body.installments = data.installments || 1;
