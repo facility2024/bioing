@@ -107,9 +107,7 @@ export async function diagnosticarContaMercadoPago(token: string, publicKey: str
   }
 
   return {
-    tokenPrefix: token.slice(0, 8),
     isProductionToken: token.startsWith("APP_USR-"),
-    publicKeyPrefix: publicKey.slice(0, 8),
     isProductionPublicKey: publicKey.startsWith("APP_USR-"),
     userId: user.id ? String(user.id) : "",
     siteId: user.site_id || "",
