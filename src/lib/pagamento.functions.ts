@@ -43,18 +43,30 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // PIX → Orders API (QR dinâmico oficial)
     if (data.metodo === "pix") {
-      const order = await criarOrderPixDinamico(token, data);
-      const QRCode = (await import("qrcode")).default;
-      const qr_code_base64 = (
-        await QRCode.toDataURL(order.qr_data, { errorCorrectionLevel: "M", margin: 1, width: 400 })
-      ).replace(/^data:image\/png;base64,/, "");
+      let qr_code = "";
+      let qr_code_base64 = "";
+      let ticket_url = "";
+      let pagamentoId = "";
+
+      try {
+        const order = await criarOrderPixDinamico(token, data);
+        qr_code = order.qr_data;
+        pagamentoId = order.payment_id || order.order_id;
+        const QRCode = (await import("qrcode")).default;
+        qr_code_base64 = (
+          await QRCode.toDataURL(order.qr_data, { errorCorrectionLevel: "M", margin: 1, width: 400 })
+        ).replace(/^data:image\/png;base64,/, "");
+      } catch (e) {
+        // Se o fallback dentro de criarOrderPixDinamico já usou /v1/payments,
+        // ainda temos qr_data. Caso contrário propaga o erro.
+        throw e;
+      }
 
       await supabaseAdmin
         .from("pedidos")
         .update({
-          pagamento_id: order.payment_id || order.order_id,
+          pagamento_id: pagamentoId,
           pagamento_status: "pendente",
           pagamento_metodo: "pix",
         })
@@ -63,12 +75,8 @@ export const criarPagamentoMP = createServerFn({ method: "POST" })
       return {
         status: "pending",
         status_detail: "waiting_pix_payment",
-        id: order.order_id,
-        pix: {
-          qr_code: order.qr_data,
-          qr_code_base64,
-          ticket_url: "",
-        },
+        id: pagamentoId,
+        pix: { qr_code, qr_code_base64, ticket_url },
       };
     }
 

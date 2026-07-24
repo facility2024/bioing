@@ -262,20 +262,40 @@ export async function criarOrderPixDinamico(
     body: JSON.stringify(body),
   });
 
-  const json = (await res.json().catch(() => ({}))) as MercadoPagoError & {
+  const raw = await res.text();
+  let json: MercadoPagoError & {
     id?: string;
     type_response?: { qr_data?: string };
     transactions?: { payments?: Array<{ id?: string }> };
-  };
+  } = {};
+  try { json = raw ? JSON.parse(raw) : {}; } catch { /* keep raw */ }
 
   if (!res.ok) {
-    console.error("[MP] orders erro", res.status, JSON.stringify(summarizeMercadoPagoError(json)));
-    throw new Error(getMpErrorMessage(json, res.status));
+    console.error(
+      "[MP] orders erro",
+      res.status,
+      JSON.stringify(summarizeMercadoPagoError(json)),
+      "raw:", raw.slice(0, 800),
+      "sentBody:", JSON.stringify(body).slice(0, 800),
+    );
+    // Fallback: tenta /v1/payments com PIX (checkout API tradicional)
+    console.warn("[MP] orders falhou, tentando fallback /v1/payments PIX");
+    const paymentBody = montarPagamentoMercadoPago(data);
+    const pay = await criarPagamentoMercadoPago(token, paymentBody);
+    const qr = pay?.point_of_interaction?.transaction_data;
+    if (!qr?.qr_code) {
+      throw new Error(getMpErrorMessage(json, res.status));
+    }
+    return {
+      qr_data: qr.qr_code,
+      order_id: String(pay.id || ""),
+      payment_id: String(pay.id || ""),
+    };
   }
 
   const qr_data = json.type_response?.qr_data || "";
   if (!qr_data) {
-    console.error("[MP] orders sem qr_data", JSON.stringify(json).slice(0, 500));
+    console.error("[MP] orders sem qr_data", raw.slice(0, 800));
     throw new Error("Não foi possível gerar o QR Code PIX no momento. Tente novamente.");
   }
 
