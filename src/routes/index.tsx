@@ -321,6 +321,18 @@ function ProdutosCarousel({
     el.scrollBy({ left: dir * el.clientWidth * 0.9, behavior: "smooth" });
   };
 
+  // Até 5 produtos: uma única linha. Acima disso, os próximos vão para
+  // novas linhas abaixo (grade que quebra a cada 5 itens).
+  if (produtos.length > 5) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+        {produtos.map((p) => (
+          <ProductCard key={p.id} produto={p} onOpen={() => onOpen(p)} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="relative group">
       <button
@@ -361,6 +373,7 @@ function ProdutosCarousel({
     </div>
   );
 }
+
 
 
 function StoreHeader({ busca, setBusca }: { busca: string; setBusca: (v: string) => void }) {
