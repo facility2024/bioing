@@ -532,6 +532,8 @@ function ProductCard({ produto, onOpen }: { produto: ProdutoDetalhe; onOpen: () 
   const { add } = useCart();
 
   const mainImage = produto.imagem_url ?? null;
+  const hoverImage =
+    (produto.imagens ?? []).find((u) => u && u !== produto.imagem_url) ?? null;
   const semEstoque = produto.controla_estoque && (produto.estoque ?? 0) <= 0;
 
   const handleAdd = (e: React.MouseEvent) => {
@@ -552,18 +554,32 @@ function ProductCard({ produto, onOpen }: { produto: ProdutoDetalhe; onOpen: () 
     >
       <div className="aspect-square bg-white overflow-hidden relative">
         {mainImage ? (
-          <img
-            src={mainImage}
-            alt={produto.nome}
-            loading="lazy"
-            className="h-full w-full object-contain"
-          />
+          <>
+            <img
+              src={mainImage}
+              alt={produto.nome}
+              loading="lazy"
+              className={`h-full w-full object-contain transition-all duration-500 ${
+                hoverImage ? "group-hover:opacity-0" : "group-hover:scale-105"
+              }`}
+            />
+            {hoverImage && (
+              <img
+                src={hoverImage}
+                alt=""
+                aria-hidden
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-contain opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+              />
+            )}
+          </>
         ) : (
           <div className="h-full w-full flex items-center justify-center text-muted-foreground">
             <ShoppingBag className="h-10 w-10" />
           </div>
         )}
       </div>
+
 
       <div className="p-4 flex flex-col flex-1 gap-2">
         <h3 className="font-semibold text-sm md:text-base line-clamp-2 min-h-[2.5rem]">{produto.nome}</h3>

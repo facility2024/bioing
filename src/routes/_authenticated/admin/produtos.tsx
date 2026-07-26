@@ -114,10 +114,16 @@ function ProdutosAdmin() {
     setOpen(true);
   };
 
+  const parseUrls = (raw: string) =>
+    raw
+      .split(/[\s,;\n]+/)
+      .map((u) => u.trim())
+      .filter(Boolean);
+
   const addImage = () => {
-    const url = newImg.trim();
-    if (!url) return;
-    setForm((f) => ({ ...f, imagens: [...f.imagens, url] }));
+    const urls = parseUrls(newImg);
+    if (urls.length === 0) return;
+    setForm((f) => ({ ...f, imagens: [...f.imagens, ...urls.filter((u) => !f.imagens.includes(u))] }));
     setNewImg("");
   };
 
@@ -136,31 +142,44 @@ function ProdutosAdmin() {
       return;
     }
     setSaving(true);
+    // Inclui URL digitada que ainda não foi adicionada com o botão "Adicionar"
+    const pendentes = parseUrls(newImg).filter((u) => !form.imagens.includes(u));
+    const imagens = [...form.imagens, ...pendentes];
     const payload = {
       nome: form.nome.trim(),
       descricao: form.descricao.trim() || null,
       preco,
       imagem_url: form.imagem_url.trim() || null,
-      imagens: form.imagens,
+      imagens,
       estoque: Number(form.estoque) || 0,
       controla_estoque: form.controla_estoque,
       ativo: form.ativo,
       categoria_id: form.categoria_id || null,
       secao: form.secao || 1,
     };
-    const { error } = form.id
-      ? await supabase.from("produtos").update(payload as any).eq("id", form.id)
-      : await supabase.from("produtos").insert(payload as any);
+    const { data: saved, error } = form.id
+      ? await supabase.from("produtos").update(payload as any).eq("id", form.id).select().maybeSingle()
+      : await supabase.from("produtos").insert(payload as any).select().maybeSingle();
     setSaving(false);
     if (error) {
       toast.error("Erro ao salvar: " + error.message);
       return;
     }
+    if (!saved) {
+      toast.error("Não foi possível confirmar o salvamento. Verifique sua permissão de administrador.");
+      return;
+    }
+    const row = saved as unknown as Produto;
+    if (row.ativo !== form.ativo || row.controla_estoque !== form.controla_estoque) {
+      toast.warning("Os interruptores foram ajustados pelo servidor. Recarregue e confira.");
+    }
+    setNewImg("");
     toast.success(form.id ? "Produto atualizado" : "Produto criado");
     setOpen(false);
-    qc.invalidateQueries({ queryKey: ["admin-produtos"] });
+    await qc.invalidateQueries({ queryKey: ["admin-produtos"] });
     qc.invalidateQueries({ queryKey: ["produtos-loja"] });
   };
+
 
   const handleDelete = async (p: Produto) => {
     if (!confirm(`Excluir "${p.nome}"?`)) return;
