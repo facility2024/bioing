@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -202,15 +202,62 @@ export function ProductDetailDialog({
 }
 
 function MagnifierImage({ src, alt }: { src: string; alt: string }) {
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [active, setActive] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0, bgX: 0, bgY: 0 });
+
+  const ZOOM = 2.5;
+  const LENS = 160;
+
+  const handleMove = (e: React.MouseEvent) => {
+    const el = imgRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    if (x < 0 || y < 0 || x > r.width || y > r.height) {
+      setActive(false);
+      return;
+    }
+    setPos({
+      x,
+      y,
+      bgX: (x / r.width) * 100,
+      bgY: (y / r.height) * 100,
+    });
+  };
+
   return (
-    <div className="relative w-full max-h-[55vh] flex items-center justify-center select-none">
+    <div
+      className="relative w-full max-h-[55vh] flex items-center justify-center select-none"
+      onMouseEnter={() => setActive(true)}
+      onMouseLeave={() => setActive(false)}
+      onMouseMove={handleMove}
+    >
       <img
+        ref={imgRef}
         src={src}
         alt={alt}
-        className="max-h-[55vh] w-full object-contain"
+        className="max-h-[55vh] w-full object-contain cursor-zoom-in"
         draggable={false}
       />
+      {active && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute rounded-full border-2 border-primary/70 shadow-xl ring-4 ring-white/60 bg-white bg-no-repeat hidden md:block"
+          style={{
+            width: LENS,
+            height: LENS,
+            left: (imgRef.current?.offsetLeft ?? 0) + pos.x - LENS / 2,
+            top: (imgRef.current?.offsetTop ?? 0) + pos.y - LENS / 2,
+            backgroundImage: `url(${src})`,
+            backgroundSize: `${(imgRef.current?.clientWidth ?? 0) * ZOOM}px ${(imgRef.current?.clientHeight ?? 0) * ZOOM}px`,
+            backgroundPosition: `${pos.bgX}% ${pos.bgY}%`,
+          }}
+        />
+      )}
     </div>
   );
 }
+
 
