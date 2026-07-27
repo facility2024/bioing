@@ -203,34 +203,53 @@ export function ProductDetailDialog({
 
 function MagnifierImage({ src, alt }: { src: string; alt: string }) {
   const imgRef = useRef<HTMLImageElement | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState(false);
-  const [pos, setPos] = useState({ x: 0, y: 0, bgX: 0, bgY: 0 });
+  const [pos, setPos] = useState({ left: 0, top: 0, bgX: 0, bgY: 0, bgW: 0, bgH: 0 });
 
   const ZOOM = 2.5;
   const LENS = 160;
 
   const handleMove = (e: React.MouseEvent) => {
     const el = imgRef.current;
-    if (!el) return;
+    const wrap = wrapRef.current;
+    if (!el || !wrap) return;
+    const nw = el.naturalWidth;
+    const nh = el.naturalHeight;
+    if (!nw || !nh) return;
+
     const r = el.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
-    if (x < 0 || y < 0 || x > r.width || y > r.height) {
+    const wr = wrap.getBoundingClientRect();
+
+    // A imagem usa object-contain: calcula a área realmente pintada
+    const scale = Math.min(r.width / nw, r.height / nh);
+    const dispW = nw * scale;
+    const dispH = nh * scale;
+    const offX = (r.width - dispW) / 2;
+    const offY = (r.height - dispH) / 2;
+
+    const x = e.clientX - r.left - offX;
+    const y = e.clientY - r.top - offY;
+    if (x < 0 || y < 0 || x > dispW || y > dispH) {
       setActive(false);
       return;
     }
+
+    setActive(true);
     setPos({
-      x,
-      y,
-      bgX: (x / r.width) * 100,
-      bgY: (y / r.height) * 100,
+      left: e.clientX - wr.left,
+      top: e.clientY - wr.top,
+      bgX: (x / dispW) * 100,
+      bgY: (y / dispH) * 100,
+      bgW: dispW * ZOOM,
+      bgH: dispH * ZOOM,
     });
   };
 
   return (
     <div
+      ref={wrapRef}
       className="relative w-full max-h-[55vh] flex items-center justify-center select-none"
-      onMouseEnter={() => setActive(true)}
       onMouseLeave={() => setActive(false)}
       onMouseMove={handleMove}
     >
@@ -248,10 +267,10 @@ function MagnifierImage({ src, alt }: { src: string; alt: string }) {
           style={{
             width: LENS,
             height: LENS,
-            left: (imgRef.current?.offsetLeft ?? 0) + pos.x - LENS / 2,
-            top: (imgRef.current?.offsetTop ?? 0) + pos.y - LENS / 2,
-            backgroundImage: `url(${src})`,
-            backgroundSize: `${(imgRef.current?.clientWidth ?? 0) * ZOOM}px ${(imgRef.current?.clientHeight ?? 0) * ZOOM}px`,
+            left: pos.left - LENS / 2,
+            top: pos.top - LENS / 2,
+            backgroundImage: `url("${src}")`,
+            backgroundSize: `${pos.bgW}px ${pos.bgH}px`,
             backgroundPosition: `${pos.bgX}% ${pos.bgY}%`,
           }}
         />
@@ -259,5 +278,6 @@ function MagnifierImage({ src, alt }: { src: string; alt: string }) {
     </div>
   );
 }
+
 
 
