@@ -16,6 +16,35 @@ type Step = "dados" | "frete" | "pagamento" | "sucesso";
 
 let mpInitialized = false;
 
+const digits = (s: string) => (s || "").replace(/\D/g, "");
+
+function maskCPF(v: string) {
+  const d = digits(v).slice(0, 11);
+  return d
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
+}
+
+function maskCEP(v: string) {
+  const d = digits(v).slice(0, 8);
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+}
+
+function cpfValido(v: string) {
+  const c = digits(v);
+  if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+  const n = c.split("").map(Number);
+  const dv = (len: number) => {
+    let s = 0;
+    for (let i = 0; i < len; i++) s += n[i] * (len + 1 - i);
+    const r = (s * 10) % 11;
+    return r === 10 ? 0 : r;
+  };
+  return dv(9) === n[9] && dv(10) === n[10];
+}
+
+
 export function CheckoutDialog({
   open,
   onOpenChange,
@@ -41,6 +70,33 @@ export function CheckoutDialog({
   const [estado, setEstado] = useState("");
   const [cep, setCep] = useState("");
   const [obs, setObs] = useState("");
+  const [cepLoading, setCepLoading] = useState(false);
+
+  async function onCepChange(v: string) {
+    const masked = maskCEP(v);
+    setCep(masked);
+    const d = digits(masked);
+    if (d.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${d}/json/`);
+      const j = await res.json();
+      if (j?.erro) {
+        toast.error("CEP não encontrado");
+        return;
+      }
+      if (j.logradouro) setRua(j.logradouro);
+      if (j.bairro) setBairro(j.bairro);
+      if (j.localidade) setCidade(j.localidade);
+      if (j.uf) setEstado(String(j.uf).toUpperCase());
+    } catch {
+      /* usuário pode preencher manualmente */
+    } finally {
+      setCepLoading(false);
+    }
+  }
+
+
 
   const [loadingFrete, setLoadingFrete] = useState(false);
   const [opcoesFrete, setOpcoesFrete] = useState<FreteOpcao[]>([]);
@@ -93,8 +149,8 @@ export function CheckoutDialog({
     if (!nome.trim()) return toast.error("Informe seu nome");
     if (telefone.replace(/\D/g, "").length < 10) return toast.error("Telefone inválido");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return toast.error("E-mail inválido");
-    if (cpf.replace(/\D/g, "").length !== 11) return toast.error("CPF inválido (11 dígitos)");
-    if (cep.replace(/\D/g, "").length !== 8) return toast.error("CEP inválido (8 dígitos)");
+    if (!cpfValido(cpf)) return toast.error("CPF inválido — confira os números digitados");
+    if (digits(cep).length !== 8) return toast.error("CEP inválido — digite os 8 números do CEP (ex: 01001-000)");
     if (!rua.trim() || !numero.trim() || !bairro.trim() || !cidade.trim() || !estado.trim()) {
       return toast.error("Preencha rua, número, bairro, cidade e estado");
     }
@@ -315,7 +371,37 @@ export function CheckoutDialog({
                 </div>
                 <div className="space-y-1">
                   <Label>CPF * (necessário para PIX/boleto)</Label>
-                  <Input placeholder="Somente números" maxLength={14} value={cpf} onChange={(e) => setCpf(e.target.value)} required />
+                  <Input
+                    inputMode="numeric"
+                    placeholder="000.000.000-00"
+                    maxLength={14}
+                    value={cpf}
+                    onChange={(e) => setCpf(maskCPF(e.target.value))}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>CEP *</Label>
+                    <div className="relative">
+                      <Input
+                        inputMode="numeric"
+                        placeholder="00000-000"
+                        maxLength={9}
+                        value={cep}
+                        onChange={(e) => onCepChange(e.target.value)}
+                        required
+                      />
+                      {cepLoading && (
+                        <Loader2 className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">Somente números — preenchemos o endereço para você.</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Número *</Label>
+                    <Input placeholder="Ex: 11" maxLength={20} value={numero} onChange={(e) => setNumero(e.target.value)} required />
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <Label>Rua *</Label>
@@ -323,12 +409,12 @@ export function CheckoutDialog({
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label>Número *</Label>
-                    <Input placeholder="Ex: 11" maxLength={20} value={numero} onChange={(e) => setNumero(e.target.value)} required />
-                  </div>
-                  <div className="space-y-1">
                     <Label>Bairro *</Label>
                     <Input placeholder="Seu bairro" maxLength={80} value={bairro} onChange={(e) => setBairro(e.target.value)} required />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Complemento</Label>
+                    <Input placeholder="Apto, bloco, referência" maxLength={200} value={obs} onChange={(e) => setObs(e.target.value)} />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -341,16 +427,7 @@ export function CheckoutDialog({
                     <Input placeholder="SP" maxLength={2} value={estado} onChange={(e) => setEstado(e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase())} required />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label>CEP *</Label>
-                    <Input placeholder="00000-000" maxLength={9} value={cep} onChange={(e) => setCep(e.target.value)} required />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Complemento</Label>
-                    <Input placeholder="Apto, bloco, referência" maxLength={200} value={obs} onChange={(e) => setObs(e.target.value)} />
-                  </div>
-                </div>
+
                 <div className="flex items-center justify-between rounded-lg border bg-muted/40 p-3">
                   <span className="text-sm text-muted-foreground">Subtotal</span>
                   <span className="text-lg font-bold">{formatBRL(subtotal)}</span>
