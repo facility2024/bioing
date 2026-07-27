@@ -122,8 +122,8 @@ export function CheckoutDialog({
     if (!nome.trim()) return toast.error("Informe seu nome");
     if (telefone.replace(/\D/g, "").length < 10) return toast.error("Telefone inválido");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return toast.error("E-mail inválido");
-    if (cpf.replace(/\D/g, "").length !== 11) return toast.error("CPF inválido (11 dígitos)");
-    if (cep.replace(/\D/g, "").length !== 8) return toast.error("CEP inválido (8 dígitos)");
+    if (!cpfValido(cpf)) return toast.error("CPF inválido — confira os números digitados");
+    if (digits(cep).length !== 8) return toast.error("CEP inválido — digite os 8 números do CEP (ex: 01001-000)");
     if (!rua.trim() || !numero.trim() || !bairro.trim() || !cidade.trim() || !estado.trim()) {
       return toast.error("Preencha rua, número, bairro, cidade e estado");
     }
