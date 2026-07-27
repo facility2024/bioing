@@ -16,6 +16,35 @@ type Step = "dados" | "frete" | "pagamento" | "sucesso";
 
 let mpInitialized = false;
 
+const digits = (s: string) => (s || "").replace(/\D/g, "");
+
+function maskCPF(v: string) {
+  const d = digits(v).slice(0, 11);
+  return d
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
+}
+
+function maskCEP(v: string) {
+  const d = digits(v).slice(0, 8);
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+}
+
+function cpfValido(v: string) {
+  const c = digits(v);
+  if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+  const n = c.split("").map(Number);
+  const dv = (len: number) => {
+    let s = 0;
+    for (let i = 0; i < len; i++) s += n[i] * (len + 1 - i);
+    const r = (s * 10) % 11;
+    return r === 10 ? 0 : r;
+  };
+  return dv(9) === n[9] && dv(10) === n[10];
+}
+
+
 export function CheckoutDialog({
   open,
   onOpenChange,
