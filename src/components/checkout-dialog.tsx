@@ -315,7 +315,37 @@ export function CheckoutDialog({
                 </div>
                 <div className="space-y-1">
                   <Label>CPF * (necessário para PIX/boleto)</Label>
-                  <Input placeholder="Somente números" maxLength={14} value={cpf} onChange={(e) => setCpf(e.target.value)} required />
+                  <Input
+                    inputMode="numeric"
+                    placeholder="000.000.000-00"
+                    maxLength={14}
+                    value={cpf}
+                    onChange={(e) => setCpf(maskCPF(e.target.value))}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label>CEP *</Label>
+                    <div className="relative">
+                      <Input
+                        inputMode="numeric"
+                        placeholder="00000-000"
+                        maxLength={9}
+                        value={cep}
+                        onChange={(e) => onCepChange(e.target.value)}
+                        required
+                      />
+                      {cepLoading && (
+                        <Loader2 className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">Somente números — preenchemos o endereço para você.</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Número *</Label>
+                    <Input placeholder="Ex: 11" maxLength={20} value={numero} onChange={(e) => setNumero(e.target.value)} required />
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <Label>Rua *</Label>
@@ -323,12 +353,12 @@ export function CheckoutDialog({
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label>Número *</Label>
-                    <Input placeholder="Ex: 11" maxLength={20} value={numero} onChange={(e) => setNumero(e.target.value)} required />
-                  </div>
-                  <div className="space-y-1">
                     <Label>Bairro *</Label>
                     <Input placeholder="Seu bairro" maxLength={80} value={bairro} onChange={(e) => setBairro(e.target.value)} required />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Complemento</Label>
+                    <Input placeholder="Apto, bloco, referência" maxLength={200} value={obs} onChange={(e) => setObs(e.target.value)} />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -341,16 +371,7 @@ export function CheckoutDialog({
                     <Input placeholder="SP" maxLength={2} value={estado} onChange={(e) => setEstado(e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase())} required />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label>CEP *</Label>
-                    <Input placeholder="00000-000" maxLength={9} value={cep} onChange={(e) => setCep(e.target.value)} required />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Complemento</Label>
-                    <Input placeholder="Apto, bloco, referência" maxLength={200} value={obs} onChange={(e) => setObs(e.target.value)} />
-                  </div>
-                </div>
+
                 <div className="flex items-center justify-between rounded-lg border bg-muted/40 p-3">
                   <span className="text-sm text-muted-foreground">Subtotal</span>
                   <span className="text-lg font-bold">{formatBRL(subtotal)}</span>
