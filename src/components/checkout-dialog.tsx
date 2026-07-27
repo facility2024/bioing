@@ -70,6 +70,33 @@ export function CheckoutDialog({
   const [estado, setEstado] = useState("");
   const [cep, setCep] = useState("");
   const [obs, setObs] = useState("");
+  const [cepLoading, setCepLoading] = useState(false);
+
+  async function onCepChange(v: string) {
+    const masked = maskCEP(v);
+    setCep(masked);
+    const d = digits(masked);
+    if (d.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${d}/json/`);
+      const j = await res.json();
+      if (j?.erro) {
+        toast.error("CEP não encontrado");
+        return;
+      }
+      if (j.logradouro) setRua(j.logradouro);
+      if (j.bairro) setBairro(j.bairro);
+      if (j.localidade) setCidade(j.localidade);
+      if (j.uf) setEstado(String(j.uf).toUpperCase());
+    } catch {
+      /* usuário pode preencher manualmente */
+    } finally {
+      setCepLoading(false);
+    }
+  }
+
+
 
   const [loadingFrete, setLoadingFrete] = useState(false);
   const [opcoesFrete, setOpcoesFrete] = useState<FreteOpcao[]>([]);
