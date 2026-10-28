@@ -3,66 +3,47 @@ import { createFileRoute } from "@tanstack/react-router";
 const BUCKET = "pedidos-pdf";
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-async function handle() {
-  const anon = process.env.SUPABASE_PUBLISHABLE_KEY;
-  const apiKey = (globalThis as any).__cronApiKey as string | undefined;
-  // We accept the anon key via the `apikey` header (verified below).
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+async function handle(request: Request) {
+  const expectedSecret = process.env.CLEANUP_CRON_SECRET;
+  if (!expectedSecret) {
+    return Response.json({ ok: false, error: "Cron secret is not configured" }, { status: 503 });
+  }
+  if (request.headers.get("authorization") !== `Bearer ${expectedSecret}`) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: files, error } = await supabaseAdmin.storage.from(BUCKET).list("", {
     limit: 1000,
     sortBy: { column: "created_at", order: "asc" },
   });
+
   if (error) {
-    return new Response(JSON.stringify({ ok: false, error: error.message }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
-    });
+    return Response.json({ ok: false, error: error.message }, { status: 500 });
   }
 
   const cutoff = Date.now() - MAX_AGE_MS;
-  const toDelete = (files || [])
-    .filter((f) => {
-      const created = f.created_at ? new Date(f.created_at).getTime() : Date.now();
-      return created < cutoff;
-    })
-    .map((f) => f.name);
+  const expiredFiles = (files ?? [])
+    .filter((file) => file.created_at && new Date(file.created_at).getTime() < cutoff)
+    .map((file) => file.name);
 
-  if (toDelete.length === 0) {
-    return new Response(JSON.stringify({ ok: true, deleted: 0 }), {
-      headers: { "content-type": "application/json" },
-    });
+  if (expiredFiles.length === 0) {
+    return Response.json({ ok: true, deleted: 0 });
   }
 
-  const { error: delErr } = await supabaseAdmin.storage.from(BUCKET).remove(toDelete);
-  if (delErr) {
-    return new Response(JSON.stringify({ ok: false, error: delErr.message }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
-    });
+  const { error: deleteError } = await supabaseAdmin.storage.from(BUCKET).remove(expiredFiles);
+  if (deleteError) {
+    return Response.json({ ok: false, error: deleteError.message }, { status: 500 });
   }
-  return new Response(JSON.stringify({ ok: true, deleted: toDelete.length }), {
-    headers: { "content-type": "application/json" },
-  });
+
+  return Response.json({ ok: true, deleted: expiredFiles.length });
 }
 
 export const Route = createFileRoute("/api/public/cron/cleanup-pedidos-pdf")({
   server: {
     handlers: {
-      GET: async ({ request }) => {
-        const apikey = request.headers.get("apikey") || request.headers.get("x-api-key");
-        if (!apikey || apikey !== process.env.SUPABASE_PUBLISHABLE_KEY) {
-          return new Response("Unauthorized", { status: 401 });
-        }
-        return handle();
-      },
-      POST: async ({ request }) => {
-        const apikey = request.headers.get("apikey") || request.headers.get("x-api-key");
-        if (!apikey || apikey !== process.env.SUPABASE_PUBLISHABLE_KEY) {
-          return new Response("Unauthorized", { status: 401 });
-        }
-        return handle();
-      },
+      GET: async ({ request }) => handle(request),
+      POST: async ({ request }) => handle(request),
     },
   },
 });
