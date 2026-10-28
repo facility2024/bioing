@@ -12,6 +12,9 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Docker/EasyPanel: gera servidor Node standalone em .output/server/index.mjs
+  // (o padrão cloudflare-module gera um Worker em dist/, que não roda com `node`).
+  nitro: { preset: "node-server" },
   vite: {
     ssr: {
       // pdf-lib ships CJS + a tslib helper that Vite's SSR loader can't
